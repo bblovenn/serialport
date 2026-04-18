@@ -8,6 +8,8 @@ TEMPLATE = app
 
 SOURCES += \
     src/core/samplepack.cpp \
+    src/core/stream.cpp \
+    src/core/streamchannel.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
     src/core/ringbuffer.cpp
@@ -15,6 +17,8 @@ SOURCES += \
 HEADERS += \
     src/core/ringbuffer.h \
     src/core/samplepack.h \
+    src/core/stream.h \
+    src/core/streamchannel.h \
     src/mainwindow.h
 
 FORMS += \

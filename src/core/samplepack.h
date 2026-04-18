@@ -4,13 +4,12 @@
 #include <QVector>
 
 
-class samplepack
+class SamplePack
 {
 public:
-    samplepack();
-    explicit samplepack(const QVector<double>& values); // 从向量构造，explicit防止隐式转换
-
-    int channelCount() const; // 返回通道数量
+    SamplePack();
+    explicit SamplePack(const QVector<double>& values); 
+    int channelCount() const; 
     double value(int channelIndex) const;
     QVector<double> values() const;
     bool isEmpty() const;

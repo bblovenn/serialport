@@ -1,5 +1,10 @@
 #include "ringbuffer.h"
 
+//环形缓冲区是一种固定容量的队列，新元素覆盖最旧元素
+//数据流采样（如串口接收数据）
+//与 samplepack 配合：两者都是数据容器，RingBuffer 侧重流式存储，samplepack 侧重采样封装
+
+
 //确保对象创建时处于有效状态，避免后续操作访问非法内存
 RingBuffer::RingBuffer(int capacity): // 构造函数声明，参数为 capacity
     m_capacity(qMax(1, capacity))  // 初始化成员变量 m_capacity，使用 qMax 确保容量至少为 1
