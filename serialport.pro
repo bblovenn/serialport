@@ -13,7 +13,8 @@ SOURCES += \
     src/main.cpp \
     src/mainwindow.cpp \
     src/core/ringbuffer.cpp \
-    src/readers/abstractreader.cpp
+    src/readers/abstractreader.cpp \
+    src/readers/demoreader.cpp
 
 HEADERS += \
     src/core/ringbuffer.h \
@@ -21,7 +22,8 @@ HEADERS += \
     src/core/stream.h \
     src/core/streamchannel.h \
     src/mainwindow.h \
-    src/readers/abstractreader.h
+    src/readers/abstractreader.h \
+    src/readers/demoreader.h
 
 FORMS += \
     src/mainwindow.ui
