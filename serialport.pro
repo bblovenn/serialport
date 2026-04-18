@@ -12,14 +12,16 @@ SOURCES += \
     src/core/streamchannel.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
-    src/core/ringbuffer.cpp
+    src/core/ringbuffer.cpp \
+    src/readers/abstractreader.cpp
 
 HEADERS += \
     src/core/ringbuffer.h \
     src/core/samplepack.h \
     src/core/stream.h \
     src/core/streamchannel.h \
-    src/mainwindow.h
+    src/mainwindow.h \
+    src/readers/abstractreader.h
 
 FORMS += \
     src/mainwindow.ui

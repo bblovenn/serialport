@@ -4,8 +4,8 @@
 #include "ringbuffer.h"
 
 #include <QColor>
-#include <QObject>
 #include <QVector>
+#include <QString>
 
 //StreamChannel 是数据流通道类，管理单条采样曲线的数据和显示属性：
 
