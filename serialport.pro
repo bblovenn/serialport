@@ -13,6 +13,7 @@ SOURCES += \
     src/main.cpp \
     src/mainwindow.cpp \
     src/core/ringbuffer.cpp \
+    src/plot/plotwidget.cpp \
     src/readers/abstractreader.cpp \
     src/readers/demoreader.cpp
 
@@ -22,6 +23,7 @@ HEADERS += \
     src/core/stream.h \
     src/core/streamchannel.h \
     src/mainwindow.h \
+    src/plot/plotwidget.h \
     src/readers/abstractreader.h \
     src/readers/demoreader.h
 
