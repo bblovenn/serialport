@@ -22,12 +22,22 @@ public:
 
 private:
     void setupPlot();
+    void setupConnections();
+
+private slots:
+    void togglePause();
+    void clearPlot();
+    void changeAutoScaleY(bool enabled);
+    void changeSampleWindow(int samples);
 
 private:
     Ui::MainWindow* ui;
+
     DemoReader* m_demoReader;
     PlotWidget* m_plotWidget;
     Stream* m_stream;
+
+    bool m_paused;
 };
 
 #endif // MAINWINDOW_H
