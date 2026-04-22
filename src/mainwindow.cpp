@@ -4,13 +4,11 @@
 #include "core/stream.h"
 #include "plot/plotwidget.h"
 #include "readers/asciireader.h"
-#include "readers/demoreader.h"
 #include "serial/serialcontroller.h"
 
 #include <QCheckBox>
 #include <QIODevice>
 #include <QPushButton>
-#include <QSerialPort>
 #include <QSpinBox>
 #include <QStatusBar>
 #include <QVBoxLayout>
@@ -19,7 +17,6 @@
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , m_demoReader(nullptr)
     , m_plotWidget(nullptr)
     , m_stream(nullptr)
     , m_asciiReader(nullptr)
@@ -27,14 +24,12 @@ MainWindow::MainWindow(QWidget* parent)
     , m_paused(false)
 {
     ui->setupUi(this);
-    setWindowTitle(tr("SerialPlot Rebuild"));
+    setWindowTitle(tr("串口波形监视器"));
 
     setupPlot();
     setupSerial();
     setupConnections();
     initializeUiState();
-
-    startDemoMode();
     refreshPorts();
 }
 
@@ -49,8 +44,8 @@ void MainWindow::setupPlot()
     m_stream->setSampleWindow(500);
 
     QWidget* plotContainer = new QWidget(ui->widget_plotArea);
-    plotContainer->setMaximumSize(1200, 700);
-    plotContainer->setMinimumSize(600, 300);
+    plotContainer->setMinimumSize(860, 440);
+    plotContainer->setMaximumSize(1020, 560);
 
     m_plotWidget = new PlotWidget(plotContainer);
     m_plotWidget->setStream(m_stream);
@@ -65,15 +60,15 @@ void MainWindow::setupPlot()
     plotContainer->setLayout(containerLayout);
 
     QVBoxLayout* plotAreaLayout = new QVBoxLayout;
-    plotAreaLayout->setContentsMargins(0, 0, 0, 0);
-    plotAreaLayout->setSpacing(0);
-    plotAreaLayout->addWidget(plotContainer, 0, Qt::AlignCenter);
+    plotAreaLayout->setContentsMargins(0, 4, 0, 4);
+    plotAreaLayout->setSpacing(8);
+    plotAreaLayout->addWidget(plotContainer, 0, Qt::AlignHCenter | Qt::AlignTop);
+    plotAreaLayout->addStretch();
     ui->widget_plotArea->setLayout(plotAreaLayout);
 }
 
 void MainWindow::setupConnections()
 {
-    connect(m_demoReader, &DemoReader::samplesReady, m_stream, &Stream::appendSamples);
     connect(m_asciiReader, &AsciiReader::samplesReady, m_stream, &Stream::appendSamples);
 
     connect(ui->pushButton_pause, &QPushButton::clicked, this, &MainWindow::togglePause);
@@ -97,36 +92,60 @@ void MainWindow::setupConnections()
         this,
         &MainWindow::toggleSerialPort
     );
+
+    connect(
+        m_serialController,
+        &SerialController::serialOpened,
+        this,
+        &MainWindow::handleSerialOpened
+    );
+    connect(
+        m_serialController,
+        &SerialController::serialClosed,
+        this,
+        &MainWindow::handleSerialClosed
+    );
+    connect(
+        m_serialController,
+        &SerialController::serialErrorOccurred,
+        this,
+        &MainWindow::handleSerialError
+    );
 }
 
 void MainWindow::setupSerial()
 {
-    m_demoReader = new DemoReader(this);
     m_asciiReader = new AsciiReader(this);
     m_serialController = new SerialController(this);
-
     m_asciiReader->setDevice(static_cast<QIODevice*>(m_serialController->port()));
 }
 
 void MainWindow::initializeUiState()
 {
-    ui->pushButton_pause->setText(tr("Pause"));
-    ui->pushButton_clear->setText(tr("Clear"));
+    ui->pushButton_pause->setText(tr("暂停接收"));
+    ui->pushButton_clear->setText(tr("清空波形"));
     ui->checkBox_autoScaleY->setChecked(false);
     ui->spinBox_sampleWindow->setValue(m_stream->sampleWindow());
-
-    ui->pushButton_refreshPorts->setText(tr("Refresh"));
-    ui->pushButton_openClose->setText(tr("Open"));
-    setRuntimeStateText(tr("Demo Mode"));
-
+    ui->pushButton_refreshPorts->setText(tr("刷新串口"));
+    ui->pushButton_openClose->setText(tr("打开串口"));
     ui->comboBox_baud->setCurrentText("115200");
 
-    statusBar()->showMessage(tr("Ready"));
+    setRuntimeStateText(tr("未连接"));
+    setSerialSettingsEnabled(true);
+
+    statusBar()->showMessage(tr("系统已就绪"));
 }
 
 void MainWindow::setRuntimeStateText(const QString& text)
 {
     ui->label_runtimeState->setText(text);
+}
+
+void MainWindow::setSerialSettingsEnabled(bool enabled)
+{
+    ui->comboBox_port->setEnabled(enabled);
+    ui->comboBox_baud->setEnabled(enabled);
+    ui->pushButton_refreshPorts->setEnabled(enabled);
 }
 
 void MainWindow::refreshPorts()
@@ -144,26 +163,12 @@ void MainWindow::refreshPorts()
         }
     }
 
-    statusBar()->showMessage(tr("Ports refreshed"), 2000);
-}
-
-void MainWindow::startDemoMode()
-{
-    setRuntimeStateText(tr("Demo Mode"));
-
-    if (!m_paused) {
-        m_demoReader->start();
-    }
-}
-
-void MainWindow::stopDemoMode()
-{
-    m_demoReader->stop();
+    statusBar()->showMessage(tr("串口列表已更新"), 2000);
 }
 
 void MainWindow::startSerialMode()
 {
-    setRuntimeStateText(tr("Serial Connected"));
+    setRuntimeStateText(tr("串口已连接"));
 
     if (!m_paused) {
         m_asciiReader->start();
@@ -183,30 +188,36 @@ void MainWindow::togglePause()
     m_plotWidget->setPaused(m_paused);
 
     if (m_paused) {
-        m_demoReader->stop();
         m_asciiReader->stop();
-        ui->pushButton_pause->setText(tr("Resume"));
-        setRuntimeStateText(tr("Paused"));
-        statusBar()->showMessage(tr("Paused"), 2000);
-    } else {
+        ui->pushButton_pause->setText(tr("继续接收"));
+
         if (m_serialController->isOpen()) {
-            m_asciiReader->start();
-            setRuntimeStateText(tr("Serial Connected"));
+            setRuntimeStateText(tr("已暂停"));
         } else {
-            m_demoReader->start();
-            setRuntimeStateText(tr("Demo Mode"));
+            setRuntimeStateText(tr("未连接"));
         }
 
-        ui->pushButton_pause->setText(tr("Pause"));
-        statusBar()->showMessage(tr("Running"), 2000);
+        statusBar()->showMessage(tr("已暂停"), 2000);
+        return;
     }
+
+    ui->pushButton_pause->setText(tr("暂停接收"));
+
+    if (m_serialController->isOpen()) {
+        m_asciiReader->start();
+        setRuntimeStateText(tr("串口已连接"));
+    } else {
+        setRuntimeStateText(tr("未连接"));
+    }
+
+    statusBar()->showMessage(tr("接收已恢复"), 2000);
 }
 
 void MainWindow::clearPlot()
 {
     m_stream->clear();
     m_plotWidget->clear();
-    statusBar()->showMessage(tr("Plot cleared"), 2000);
+    statusBar()->showMessage(tr("波形已清空"), 2000);
 }
 
 void MainWindow::changeAutoScaleY(bool enabled)
@@ -228,14 +239,8 @@ void MainWindow::handleRefreshPorts()
 void MainWindow::toggleSerialPort()
 {
     if (m_serialController->isOpen()) {
-        stopSerialMode();
         m_serialController->close();
-
-        ui->pushButton_openClose->setText(tr("Open"));
-        statusBar()->showMessage(tr("Serial port closed"), 2000);
-
         m_stream->clear();
-        startDemoMode();
         return;
     }
 
@@ -243,25 +248,68 @@ void MainWindow::toggleSerialPort()
     const int baudRate = ui->comboBox_baud->currentText().toInt();
 
     if (portName.isEmpty()) {
-        statusBar()->showMessage(tr("Please select a serial port"), 3000);
+        statusBar()->showMessage(tr("请先选择串口"), 3000);
         return;
     }
 
-    stopDemoMode();
     stopSerialMode();
     m_stream->clear();
+    m_asciiReader->setDevice(static_cast<QIODevice*>(m_serialController->port()));
 
     if (!m_serialController->open(portName, baudRate)) {
-        startDemoMode();
-        setRuntimeStateText(tr("Demo Mode"));
-        statusBar()->showMessage(tr("Failed to open %1").arg(portName), 3000);
+        const QString errorText = m_serialController->lastErrorString().isEmpty()
+            ? tr("未知错误")
+            : m_serialController->lastErrorString();
+
+        setRuntimeStateText(tr("未连接"));
+        ui->pushButton_openClose->setText(tr("打开串口"));
+        setSerialSettingsEnabled(true);
+        statusBar()->showMessage(
+            tr("无法打开 %1：%2").arg(portName).arg(errorText),
+            5000
+        );
         return;
     }
 
-    m_asciiReader->setDevice(static_cast<QIODevice*>(m_serialController->port()));
     startSerialMode();
-    setRuntimeStateText(tr("Serial Connected"));
+}
 
-    ui->pushButton_openClose->setText(tr("Close"));
-    statusBar()->showMessage(tr("Opened %1 @ %2").arg(portName).arg(baudRate), 3000);
+void MainWindow::handleSerialOpened(const QString& portName, int baudRate)
+{
+    ui->pushButton_openClose->setText(tr("关闭串口"));
+    setRuntimeStateText(tr("串口已连接"));
+    setSerialSettingsEnabled(false);
+    statusBar()->showMessage(tr("已连接 %1，波特率 %2").arg(portName).arg(baudRate), 3000);
+}
+
+void MainWindow::handleSerialClosed()
+{
+    stopSerialMode();
+    ui->pushButton_openClose->setText(tr("打开串口"));
+    setSerialSettingsEnabled(true);
+
+    if (m_paused) {
+        setRuntimeStateText(tr("已暂停"));
+    } else {
+        setRuntimeStateText(tr("未连接"));
+    }
+
+    statusBar()->showMessage(tr("串口连接已关闭"), 3000);
+}
+
+void MainWindow::handleSerialError(const QString& message)
+{
+    statusBar()->showMessage(tr("串口通信异常：%1").arg(message), 5000);
+
+    if (!m_serialController->isOpen()) {
+        stopSerialMode();
+        ui->pushButton_openClose->setText(tr("打开串口"));
+        setSerialSettingsEnabled(true);
+
+        if (m_paused) {
+            setRuntimeStateText(tr("已暂停"));
+        } else {
+            setRuntimeStateText(tr("未连接"));
+        }
+    }
 }

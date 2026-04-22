@@ -2,9 +2,9 @@
 #define SERIALCONTROLLER_H
 
 #include <QObject>
+#include <QSerialPort>
+#include <QString>
 #include <QStringList>
-
-class QSerialPort;
 
 class SerialController : public QObject
 {
@@ -21,8 +21,19 @@ public:
     void close();
     bool isOpen() const;
 
+    QString lastErrorString() const;
+
+signals:
+    void serialOpened(const QString& portName, int baudRate);
+    void serialClosed();
+    void serialErrorOccurred(const QString& message);
+
+private slots:
+    void handlePortError(QSerialPort::SerialPortError error);
+
 private:
     QSerialPort* m_port;
+    QString m_lastErrorString;
 };
 
 #endif // SERIALCONTROLLER_H

@@ -4,13 +4,10 @@
 #include <QMainWindow>
 #include <QString>
 
-//前向声明
-class DemoReader;
 class PlotWidget;
 class Stream;
 class AsciiReader;
 class SerialController;
-
 
 namespace Ui {
 class MainWindow;
@@ -30,9 +27,8 @@ private:
     void setupSerial();
     void initializeUiState();
     void setRuntimeStateText(const QString& text);
+    void setSerialSettingsEnabled(bool enabled);
     void refreshPorts();
-    void startDemoMode();
-    void stopDemoMode();
     void startSerialMode();
     void stopSerialMode();
 
@@ -43,11 +39,13 @@ private slots:
     void changeSampleWindow(int samples);
     void handleRefreshPorts();
     void toggleSerialPort();
+    void handleSerialOpened(const QString& portName, int baudRate);
+    void handleSerialClosed();
+    void handleSerialError(const QString& message);
 
 private:
     Ui::MainWindow* ui;
 
-    DemoReader* m_demoReader;
     PlotWidget* m_plotWidget;
     Stream* m_stream;
     AsciiReader* m_asciiReader;
