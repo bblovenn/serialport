@@ -9,13 +9,8 @@ SerialController::SerialController(QObject* parent)
     , m_port(new QSerialPort(this))
     , m_lastErrorString()
 {
-    // 监听底层串口对象的错误信号，统一转到当前类中处理。
-    connect(
-        m_port,
-        &QSerialPort::errorOccurred,
-        this,
-        &SerialController::handlePortError
-    );
+    // 底层串口一旦报错，统一由当前类向上转发。
+    connect(m_port, &QSerialPort::errorOccurred, this, &SerialController::handlePortError);
 }
 
 SerialController::~SerialController()
@@ -28,7 +23,6 @@ QStringList SerialController::availablePorts() const
     QStringList names;
     const QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
 
-    // 扫描当前系统中可用的串口名称，供界面下拉框刷新使用。
     for (const QSerialPortInfo& info : ports) {
         names.append(info.portName());
     }
@@ -43,14 +37,13 @@ QSerialPort* SerialController::port() const
 
 bool SerialController::open(const QString& portName, int baudRate)
 {
-    // 如果之前已经打开过串口，先关闭，避免复用旧状态。
     if (m_port->isOpen()) {
+        // 重新打开前先关闭旧连接，避免端口配置残留。
         m_port->close();
     }
 
     m_lastErrorString.clear();
 
-    // 先把常用串口参数配置好，再执行真正的打开动作。
     m_port->setPortName(portName);
     m_port->setBaudRate(baudRate);
     m_port->setDataBits(QSerialPort::Data8);
@@ -58,21 +51,19 @@ bool SerialController::open(const QString& portName, int baudRate)
     m_port->setStopBits(QSerialPort::OneStop);
     m_port->setFlowControl(QSerialPort::NoFlowControl);
 
+    // 打开失败时保留错误文本，并通过信号交给界面层提示用户。
     if (!m_port->open(QIODevice::ReadWrite)) {
-        // 打开失败时缓存错误信息，并通知上层界面显示原因。
         m_lastErrorString = m_port->errorString();
         emit serialErrorOccurred(m_lastErrorString);
         return false;
     }
 
-    // 打开成功后发出信号，让主窗口更新按钮和运行状态。
     emit serialOpened(portName, baudRate);
     return true;
 }
 
 void SerialController::close()
 {
-    // 避免重复关闭导致无意义的状态切换。
     if (!m_port->isOpen()) {
         return;
     }
@@ -86,6 +77,52 @@ bool SerialController::isOpen() const
     return m_port->isOpen();
 }
 
+bool SerialController::send(const QByteArray& data)
+{
+    if (data.isEmpty()) {
+        m_lastErrorString = QStringLiteral("发送内容为空");
+        return false;
+    }
+
+    if (!m_port || !m_port->isOpen()) {
+        m_lastErrorString = QStringLiteral("串口未打开");
+        return false;
+    }
+
+    qint64 totalWritten = 0;
+    while (totalWritten < data.size()) {
+        // write() 可能只接收部分数据，必须继续写剩余内容，避免命令被截断。
+        const qint64 written = m_port->write(
+            data.constData() + totalWritten,
+            data.size() - totalWritten
+        );
+
+        if (written < 0) {
+            m_lastErrorString = m_port->errorString();
+            emit serialErrorOccurred(m_lastErrorString);
+            return false;
+        }
+
+        if (written == 0) {
+            if (!m_port->waitForBytesWritten(100)) {
+                m_lastErrorString = m_port->errorString();
+                if (m_lastErrorString.isEmpty()) {
+                    m_lastErrorString = QStringLiteral("串口暂时无法写入");
+                }
+                return false;
+            }
+            continue;
+        }
+
+        totalWritten += written;
+    }
+
+    // flush() 只是尝试立刻把 Qt 缓冲区推到底层系统；返回 false 不代表发送失败。
+    m_port->flush();
+    m_lastErrorString.clear();
+    return true;
+}
+
 QString SerialController::lastErrorString() const
 {
     return m_lastErrorString;
@@ -97,11 +134,10 @@ void SerialController::handlePortError(QSerialPort::SerialPortError error)
         return;
     }
 
-    // 保留最近一次错误文本，便于界面提示或调试查看。
     m_lastErrorString = m_port->errorString();
     emit serialErrorOccurred(m_lastErrorString);
 
-    // 这几类错误通常意味着串口已经不可继续使用，需要主动关闭并同步界面状态。
+    // 这几类错误通常意味着串口已经不可继续使用，需要同步关闭状态。
     if (error == QSerialPort::ResourceError ||
         error == QSerialPort::DeviceNotFoundError ||
         error == QSerialPort::PermissionError) {

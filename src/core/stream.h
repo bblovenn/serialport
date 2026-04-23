@@ -7,17 +7,22 @@
 #include <QObject>
 #include <QVector>
 
+// Stream 负责管理整条波形数据流。
+// 它接收 AsciiReader 解析出的 SamplePack，并按通道拆分到多个 StreamChannel 中。
+// MainWindow 和 PlotWidget 通过 Stream 访问数据，不直接关心底层缓冲区实现。
 class Stream : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit Stream(QObject *parent = nullptr);
+    explicit Stream(QObject* parent = nullptr);
     ~Stream() override;
 
-    void appendSamples(const SamplePack& pack); 
+    // 追加一次多通道采样；暂停时直接忽略输入。
+    void appendSamples(const SamplePack& pack);
     void clear();
 
+    // 控制每个通道最多保留多少个采样点。
     void setSampleWindow(int samples);
     int sampleWindow() const;
 
@@ -28,15 +33,13 @@ public:
     void setPaused(bool paused);
     bool isPaused() const;
 
-signals:
-
 private:
+    // 根据输入数据通道数量自动创建缺失的通道。
     void ensureChannelCount(int count);
 
-    QVector<StreamChannel*> m_channels; // 存储所有通道指针的向量
-    int m_sampleWindow; // 采样窗口，控制数据保留量
-    bool m_paused; //暂停标志
-
+    QVector<StreamChannel*> m_channels; // 所有通道对象，Stream 负责释放。
+    int m_sampleWindow;                 // 每个通道最多保留的采样点数。
+    bool m_paused;                      // 暂停时忽略新输入。
 };
 
 #endif // STREAM_H

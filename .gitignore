@@ -24,6 +24,7 @@ tags
 .directory
 *.debug
 Makefile*
+object_script.*
 *.prl
 *.app
 moc_*.cpp
@@ -34,9 +35,15 @@ Thumbs.db
 *.rc
 /.qmake.cache
 /.qmake.stash
+/debug/
+/release/
+/ui_mainwindow.h
+/串口调试.png
 
 # qtcreator generated files
 *.pro.user*
+build-*/
+tests/build-*/
 
 # xemacs temporary files
 *.flc

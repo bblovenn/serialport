@@ -1,5 +1,6 @@
 #include "streamchannel.h"
 
+// 通道默认可见，并带一个基础显示色；具体名称和颜色通常由 Stream 创建通道时设置。
 StreamChannel::StreamChannel(int capacity)
     : m_buffer(capacity)
     , m_color(QColor(80, 220, 120))

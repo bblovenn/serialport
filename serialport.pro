@@ -34,6 +34,9 @@ HEADERS += \
 FORMS += \
     src/mainwindow.ui
 
+RESOURCES += \
+    resources.qrc
+
 INCLUDEPATH += \
     src \
     src/core \
