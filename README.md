@@ -17,7 +17,7 @@
 ## 运行环境
 
 - Qt 5.14.2 或兼容的 Qt 5 版本
-- Qt 模块：`core`、`gui`、`widgets`、`serialport`
+- Qt 模块：`core` `gui` `widgets` `serialport`
 - Windows + MinGW 64-bit 已验证
 
 ## 使用 Qt Creator 构建
@@ -30,9 +30,9 @@
 ## 使用命令行构建
 
 ```powershell
-cd D:\QTProject\serialport\serialport\serialport
-$env:Path = "D:\Qt\Qt5.14.2\Tools\mingw730_64\bin;D:\Qt\Qt5.14.2\5.14.2\mingw73_64\bin;" + $env:Path
-D:\Qt\Qt5.14.2\5.14.2\mingw73_64\bin\qmake.exe serialport.pro
+cd ...\serialport
+$env:Path = "...\Qt5.14.2\Tools\mingw730_64\bin;D:\Qt\Qt5.14.2\5.14.2\mingw73_64\bin;" + $env:Path
+...\Qt5.14.2\5.14.2\mingw73_64\bin\qmake.exe serialport.pro
 mingw32-make
 ```
 
@@ -73,7 +73,7 @@ assets/       应用图标等资源
 
 ## 开发说明
 
-- 生成文件不要提交，例如 `debug/`、`release/`、`Makefile*`、`ui_*.h`、`qrc_*.cpp`。
+- 生成文件不要提交，例如 `debug/` `release/` `Makefile*` `ui_*.h` `qrc_*.cpp`。
 - Qt Creator 生成的 `*.pro.user*` 和 `build-*` 目录不应提交。
 - 当前应用图标来自 `assets/app_icon.png`，通过 `resources.qrc` 打包进程序。
 
