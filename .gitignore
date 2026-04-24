@@ -28,6 +28,7 @@ object_script.*
 *.prl
 *.app
 moc_*.cpp
+moc_*.h
 ui_*.h
 qrc_*.cpp
 Thumbs.db
@@ -37,13 +38,20 @@ Thumbs.db
 /.qmake.stash
 /debug/
 /release/
+/dist/
+debug/
+release/
+dist/
 /ui_mainwindow.h
 /串口调试.png
 
 # qtcreator generated files
 *.pro.user*
 build-*/
+/build/
 tests/build-*/
+tests/ui/*.txt
+tests/ui/target_wrapper.bat
 
 # xemacs temporary files
 *.flc
