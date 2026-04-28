@@ -1,6 +1,5 @@
 #include "streamchannel.h"
 
-// 通道默认可见，并带一个基础显示色；具体名称和颜色通常由 Stream 创建通道时设置。
 StreamChannel::StreamChannel(int capacity)
     : m_buffer(capacity)
     , m_color(QColor(80, 220, 120))
@@ -36,6 +35,16 @@ int StreamChannel::size() const
 QVector<double> StreamChannel::values() const
 {
     return m_buffer.values();
+}
+
+QVector<double> StreamChannel::values(int maxCount) const
+{
+    return m_buffer.values(maxCount);
+}
+
+bool StreamChannel::minMaxOfLast(int maxCount, double* minValue, double* maxValue) const
+{
+    return m_buffer.minMaxOfLast(maxCount, minValue, maxValue);
 }
 
 QString StreamChannel::name() const

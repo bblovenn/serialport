@@ -3,6 +3,7 @@
 #include <QComboBox>
 #include <QGroupBox>
 #include <QLineEdit>
+#include <QMetaObject>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QCheckBox>
@@ -10,7 +11,10 @@
 #include <QVBoxLayout>
 #include <QtTest>
 
+#include "core/samplepack.h"
+#include "core/stream.h"
 #include "mainwindow.h"
+#include "plot/plotwidget.h"
 
 class MainWindowLayoutTest : public QObject
 {
@@ -20,6 +24,8 @@ private slots:
     void layout_has_header_and_settings_rows();
     void initial_texts_match_the_approved_design();
     void spacing_and_widths_match_the_compact_layout();
+    void runtime_state_uses_explicit_property();
+    void plot_auto_scale_uses_visible_window_only();
 };
 
 void MainWindowLayoutTest::layout_has_header_and_settings_rows()
@@ -154,6 +160,49 @@ void MainWindowLayoutTest::spacing_and_widths_match_the_compact_layout()
     auto* sendText = window.findChild<QLineEdit*>("lineEdit_sendText");
     QVERIFY2(sendText != nullptr, "lineEdit_sendText should exist");
     QCOMPARE(sendText->placeholderText(), QString::fromUtf8("请输入要发送的文本内容"));
+}
+
+void MainWindowLayoutTest::runtime_state_uses_explicit_property()
+{
+    MainWindow window;
+
+    auto* runtimeStateLabel = window.findChild<QLabel*>("label_runtimeState");
+    QVERIFY2(runtimeStateLabel != nullptr, "label_runtimeState should exist");
+    QCOMPARE(runtimeStateLabel->property("runtimeState").toString(), QString("disconnected"));
+
+    QVERIFY(QMetaObject::invokeMethod(
+        &window,
+        "handleSerialOpened",
+        Q_ARG(QString, QString("COM9")),
+        Q_ARG(int, 115200)
+    ));
+    QCOMPARE(runtimeStateLabel->property("runtimeState").toString(), QString("connected"));
+
+    QVERIFY(QMetaObject::invokeMethod(&window, "togglePause"));
+    QCOMPARE(runtimeStateLabel->property("runtimeState").toString(), QString("paused"));
+
+    QVERIFY(QMetaObject::invokeMethod(&window, "handleSerialClosed"));
+    QCOMPARE(runtimeStateLabel->property("runtimeState").toString(), QString("paused"));
+}
+
+void MainWindowLayoutTest::plot_auto_scale_uses_visible_window_only()
+{
+    Stream stream;
+    stream.setSampleWindow(5);
+    stream.appendSamples(SamplePack(QVector<double>{-100.0}));
+    stream.appendSamples(SamplePack(QVector<double>{1.0}));
+    stream.appendSamples(SamplePack(QVector<double>{2.0}));
+    stream.appendSamples(SamplePack(QVector<double>{3.0}));
+    stream.appendSamples(SamplePack(QVector<double>{4.0}));
+
+    PlotWidget widget;
+    widget.setStream(&stream);
+    widget.setSampleWindow(3);
+    widget.setAutoScaleY(true);
+
+    const QPair<double, double> range = widget.currentYAxisRange();
+    QCOMPARE(range.first, 2.0);
+    QCOMPARE(range.second, 4.0);
 }
 
 QTEST_MAIN(MainWindowLayoutTest)

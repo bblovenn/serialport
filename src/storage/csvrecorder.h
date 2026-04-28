@@ -22,6 +22,7 @@ public:
 private:
     void writeHeader(int channelCount);
     static QString escapeCsvField(const QString& text);
+    static QString formatExtraValues(const QVector<double>& values, int startIndex);
 
     QFile m_file;
     QTextStream m_stream;

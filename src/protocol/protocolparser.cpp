@@ -18,6 +18,7 @@ void ProtocolParser::appendData(const QByteArray& data)
         return;
     }
 
+    // 串口数据可能分多次到达，先累计，等拿到完整换行后再按帧解析。
     m_buffer.append(data);
 
     int newlineIndex = m_buffer.indexOf('\n');
@@ -125,7 +126,12 @@ void ProtocolParser::parseLine(const QByteArray& rawLine)
     }
 
     if (!m_hasLastSequence) {
+        // 第一帧只建立统计基线，不参与丢包计算。
         m_hasLastSequence = true;
+        m_lastSequence = sequence;
+        m_lastTimestampMs = timestampMs;
+    } else if (sequence == 0 && m_lastSequence != 0) {
+        // 设备重新从 0 起号时，同步重建丢包统计基线。
         m_lastSequence = sequence;
         m_lastTimestampMs = timestampMs;
     } else if (sequence > m_lastSequence) {
@@ -137,7 +143,7 @@ void ProtocolParser::parseLine(const QByteArray& rawLine)
         m_lastSequence = sequence;
         m_lastTimestampMs = timestampMs;
     } else if (timestampMs < m_lastTimestampMs) {
-        // 下位机时间戳回退通常意味着设备重启，重新建立丢包统计基线。
+        // 设备时间戳回退通常意味着重启，此时重新建立丢包统计基线。
         m_lastSequence = sequence;
         m_lastTimestampMs = timestampMs;
     }

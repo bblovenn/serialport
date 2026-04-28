@@ -31,11 +31,13 @@ private slots:
     void protocolParser_countsLostPacketsFromSequenceGaps();
     void protocolParser_ignoresOutOfOrderFramesForLossBaseline();
     void protocolParser_resetsSequenceBaselineWhenDeviceTimestampRestarts();
+    void protocolParser_resetsSequenceBaselineWhenSequenceWraps();
     void csvRecorder_createsFileOnStart();
     void csvRecorder_writesHeaderAndSingleFrame();
     void csvRecorder_appendsMultipleFrames();
     void csvRecorder_ignoresAppendsAfterStop();
     void csvRecorder_escapesRawFrameForCsv();
+    void csvRecorder_preservesOverflowChannelsInExtraValues();
 };
 
 void CoreTest::samplePack_reportsValuesAndChannelCount()
@@ -262,6 +264,26 @@ void CoreTest::protocolParser_resetsSequenceBaselineWhenDeviceTimestampRestarts(
     QCOMPARE(parser.lostPacketCount(), 0);
 }
 
+void CoreTest::protocolParser_resetsSequenceBaselineWhenSequenceWraps()
+{
+    ProtocolParser parser;
+
+    parser.appendData(
+        "$DATA,100,5000,1.0,2.0,3.0*26\r\n"
+        "$DATA,0,5020,4.0,5.0,6.0*22\r\n"
+        "$DATA,3,5040,7.0,8.0,9.0*26\r\n"
+    );
+    const QVector<ProtocolFrame> frames = parser.takeFrames();
+
+    QCOMPARE(parser.parseErrorCount(), 0);
+    QCOMPARE(parser.checksumErrorCount(), 0);
+    QCOMPARE(frames.size(), 3);
+    QCOMPARE(frames[0].sequence, static_cast<quint32>(100));
+    QCOMPARE(frames[1].sequence, static_cast<quint32>(0));
+    QCOMPARE(frames[2].sequence, static_cast<quint32>(3));
+    QCOMPARE(parser.lostPacketCount(), 2);
+}
+
 void CoreTest::csvRecorder_createsFileOnStart()
 {
     QTemporaryDir tempDir;
@@ -302,7 +324,7 @@ void CoreTest::csvRecorder_writesHeaderAndSingleFrame()
     QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
     const QString content = QString::fromUtf8(file.readAll());
 
-    QVERIFY(content.contains("host_time,sequence,device_time_ms,ch1,ch2,ch3,raw_frame"));
+    QVERIFY(content.contains("host_time,sequence,device_time_ms,ch1,ch2,ch3,extra_values,raw_frame"));
     QVERIFY(content.contains(",2,1020,0.25,0.35,0.45,"));
     QVERIFY(content.contains("\"$DATA,2,1020,0.25,0.35,0.45*13\""));
 }
@@ -400,6 +422,41 @@ void CoreTest::csvRecorder_escapesRawFrameForCsv()
     QVERIFY(content.contains("\"$DATA,9,9999,\"\"quoted\"\",2.0,3.0*AA\""));
 }
 
+void CoreTest::csvRecorder_preservesOverflowChannelsInExtraValues()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    CsvRecorder recorder;
+    const QString filePath = tempDir.filePath("extra_values.csv");
+    QVERIFY(recorder.start(filePath));
+
+    ProtocolFrame frame1;
+    frame1.isValid = true;
+    frame1.sequence = 1;
+    frame1.timestampMs = 1000;
+    frame1.values = QVector<double>{0.20, 0.30, 0.40};
+    frame1.rawFrame = "$DATA,1,1000,0.20,0.30,0.40*17";
+
+    ProtocolFrame frame2;
+    frame2.isValid = true;
+    frame2.sequence = 2;
+    frame2.timestampMs = 1020;
+    frame2.values = QVector<double>{0.25, 0.35, 0.45, 0.55, 0.65};
+    frame2.rawFrame = "$DATA,2,1020,0.25,0.35,0.45,0.55,0.65*10";
+
+    recorder.append(frame1);
+    recorder.append(frame2);
+    recorder.stop();
+
+    QFile file(filePath);
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString content = QString::fromUtf8(file.readAll());
+
+    QVERIFY(content.contains("host_time,sequence,device_time_ms,ch1,ch2,ch3,extra_values,raw_frame"));
+    QVERIFY(content.contains(",2,1020,0.25,0.35,0.45,\"0.55;0.65\","));
+}
+
 
 QTEST_MAIN(CoreTest)
-#include "release/tst_core.moc"
+#include "tst_core.moc"

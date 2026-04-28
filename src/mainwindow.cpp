@@ -11,6 +11,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFont>
+#include <QFontDatabase>
 #include <QIODevice>
 #include <QLineEdit>
 #include <QPlainTextEdit>
@@ -28,6 +29,11 @@
 // 2. 创建串口与读取器
 // 3. 建立界面和数据流连接
 // 4. 初始化默认 UI 状态
+// 主窗口构造时集中完成四件事：
+// 1. 创建绘图组件
+// 2. 创建串口与读取器
+// 3. 建立界面和数据流连接
+// 4. 初始化默认 UI 状态
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -35,6 +41,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_stream(nullptr)
     , m_asciiReader(nullptr)
     , m_serialController(nullptr)
+    , m_runtimeState(RuntimeState::Disconnected)
     , m_paused(false)
 {
     ui->setupUi(this);
@@ -54,6 +61,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+// 绘图区域只关心数据展示，具体采样数据由 Stream 统一管理。
 void MainWindow::setupPlot()
 {
     // Stream 保存多通道采样数据，PlotWidget 负责把它画出来。
@@ -87,7 +95,7 @@ void MainWindow::setupPlot()
 
 void MainWindow::applyVisualStyle()
 {
-    QFont uiFont(QStringLiteral("Microsoft YaHei"));
+    QFont uiFont = font();
     uiFont.setStyleHint(QFont::SansSerif);
     uiFont.setPointSize(10);
     uiFont.setWeight(QFont::Light);
@@ -296,13 +304,14 @@ void MainWindow::applyVisualStyle()
         }
     )"));
 
-    QFont logFont(QStringLiteral("Consolas"));
+    QFont logFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
     logFont.setStyleHint(QFont::Monospace);
     logFont.setPointSize(10);
     logFont.setWeight(QFont::Normal);
     ui->plainTextEdit_serialLog->setFont(logFont);
 }
 
+// 这里连接波形主链路和基础控制按钮，属于界面层到数据层的总装点。
 void MainWindow::setupConnections()
 {
     // 波形主链路：读取器解析出采样包后，直接追加到数据流。
@@ -350,6 +359,7 @@ void MainWindow::setupConnections()
     );
 }
 
+// 串口通信面板的发送、日志和录制信号集中放在这里，后续扩展更好找。
 void MainWindow::setupSerialConsoleConnections()
 {
     // 通信面板相关操作统一放在这里，便于后续扩展发送和日志功能。
@@ -367,6 +377,7 @@ void MainWindow::setupSerialConsoleConnections()
     );
 }
 
+// AsciiReader 依赖 QIODevice 抽象，因此串口控制器只需要暴露底层设备即可。
 void MainWindow::setupSerial()
 {
     // AsciiReader 只关心 QIODevice，因此把串口对象以设备形式交给它。
@@ -375,6 +386,7 @@ void MainWindow::setupSerial()
     m_asciiReader->setDevice(static_cast<QIODevice*>(m_serialController->port()));
 }
 
+// 启动时的默认文案和控件状态统一在这里收口，避免构造函数里散落赋值。
 void MainWindow::initializeUiState()
 {
     // 这里集中设置启动时的默认界面状态，避免在构造函数里零散赋值。
@@ -400,7 +412,7 @@ void MainWindow::initializeUiState()
     setOpenCloseButtonMode(false);
     ui->comboBox_baud->setCurrentText("115200");
 
-    setRuntimeStateText(tr("未连接"));
+    setRuntimeState(RuntimeState::Disconnected, tr("未连接"));
     setSerialSettingsEnabled(true);
     updateRecordUiState();
 
@@ -409,11 +421,30 @@ void MainWindow::initializeUiState()
 
 void MainWindow::setRuntimeStateText(const QString& text)
 {
+    setRuntimeState(m_runtimeState, text);
+}
+
+void MainWindow::setRuntimeState(RuntimeState state, const QString& text)
+{
+    m_runtimeState = state;
     ui->label_runtimeState->setText(text);
+    ui->label_runtimeState->setProperty("runtimeState", QStringLiteral("disconnected"));
 
     QString background = QStringLiteral("#e5e7eb");
     QString foreground = QStringLiteral("#475569");
     QString border = QStringLiteral("#cbd5e1");
+
+    if (state == RuntimeState::Connected) {
+        background = QStringLiteral("#e7f8ef");
+        foreground = QStringLiteral("#287a4b");
+        border = QStringLiteral("#9bd8b5");
+        ui->label_runtimeState->setProperty("runtimeState", QStringLiteral("connected"));
+    } else if (state == RuntimeState::Paused) {
+        background = QStringLiteral("#fff7df");
+        foreground = QStringLiteral("#9a6a16");
+        border = QStringLiteral("#efd27c");
+        ui->label_runtimeState->setProperty("runtimeState", QStringLiteral("paused"));
+    }
 
     if (text.contains(tr("已连接"))) {
         background = QStringLiteral("#e7f8ef");
@@ -449,6 +480,7 @@ void MainWindow::setOpenCloseButtonMode(bool connected)
     ui->pushButton_openClose->update();
 }
 
+// 刷新端口列表时尽量保留当前选择，减少用户每次重新配置的成本。
 void MainWindow::refreshPorts()
 {
     // 刷新串口列表时尽量保留用户当前选中的端口。
@@ -462,7 +494,7 @@ void MainWindow::refreshPorts()
         ui->comboBox_port->setEnabled(false);
         ui->comboBox_baud->setEnabled(false);
         ui->pushButton_openClose->setEnabled(false);
-        setRuntimeStateText(tr("未连接"));
+        setRuntimeState(RuntimeState::Disconnected, tr("未连接"));
         showStatusMessage(tr("未发现可用串口"), 3000);
         return;
     }
@@ -482,13 +514,16 @@ void MainWindow::refreshPorts()
     showStatusMessage(tr("串口列表已更新"), 2000);
 }
 
+// 串口打开后先更新运行态，再根据暂停状态决定是否真正启动读取器。
 void MainWindow::startSerialMode()
 {
     // 只有在未暂停时才真正启动读取器。
-    setRuntimeStateText(tr("串口已连接"));
+    setRuntimeState(RuntimeState::Connected, tr("串口已连接"));
 
     if (!m_paused) {
-        m_asciiReader->start();
+        if (m_serialController->isOpen()) {
+            m_asciiReader->start();
+        }
     }
 }
 
@@ -497,6 +532,7 @@ void MainWindow::stopSerialMode()
     m_asciiReader->stop();
 }
 
+// 日志统一带上类别和时间戳，排查串口时能更快定位上下文。
 void MainWindow::appendSerialLog(const QString& category, const QString& text)
 {
     // 所有日志都统一加上类别和时间戳，方便排查通信过程。
@@ -537,15 +573,19 @@ void MainWindow::togglePause()
 
     m_stream->setPaused(m_paused);
     m_plotWidget->setPaused(m_paused);
+    const bool serialSessionActive =
+        m_serialController->isOpen() ||
+        m_runtimeState == RuntimeState::Connected ||
+        m_runtimeState == RuntimeState::Paused;
 
     if (m_paused) {
         m_asciiReader->stop();
         ui->pushButton_pause->setText(tr("继续接收"));
 
-        if (m_serialController->isOpen()) {
-            setRuntimeStateText(tr("已暂停"));
+        if (serialSessionActive) {
+            setRuntimeState(RuntimeState::Paused, tr("已暂停"));
         } else {
-            setRuntimeStateText(tr("未连接"));
+            setRuntimeState(RuntimeState::Disconnected, tr("未连接"));
         }
 
         showStatusMessage(tr("已暂停"), 2000);
@@ -554,11 +594,13 @@ void MainWindow::togglePause()
 
     ui->pushButton_pause->setText(tr("暂停接收"));
 
-    if (m_serialController->isOpen()) {
-        m_asciiReader->start();
-        setRuntimeStateText(tr("串口已连接"));
+    if (serialSessionActive) {
+        if (m_serialController->isOpen()) {
+            m_asciiReader->start();
+        }
+        setRuntimeState(RuntimeState::Connected, tr("串口已连接"));
     } else {
-        setRuntimeStateText(tr("未连接"));
+        setRuntimeState(RuntimeState::Disconnected, tr("未连接"));
     }
 
     showStatusMessage(tr("接收已恢复"), 2000);
@@ -613,7 +655,7 @@ void MainWindow::toggleSerialPort()
             ? tr("未知错误")
             : m_serialController->lastErrorString();
 
-        setRuntimeStateText(tr("未连接"));
+        setRuntimeState(RuntimeState::Disconnected, tr("未连接"));
         ui->pushButton_openClose->setText(tr("打开串口"));
         setOpenCloseButtonMode(false);
         setSerialSettingsEnabled(true);
@@ -630,7 +672,7 @@ void MainWindow::handleSerialOpened(const QString& portName, int baudRate)
     // 串口连接成功后，锁定端口和波特率配置，避免运行中误切换。
     ui->pushButton_openClose->setText(tr("关闭串口"));
     setOpenCloseButtonMode(true);
-    setRuntimeStateText(tr("串口已连接"));
+    setRuntimeState(RuntimeState::Connected, tr("串口已连接"));
     setSerialSettingsEnabled(false);
 
     const QString message = tr("已连接 %1，波特率 %2").arg(portName).arg(baudRate);
@@ -656,9 +698,9 @@ void MainWindow::handleSerialClosed()
     updateRecordUiState();
 
     if (m_paused) {
-        setRuntimeStateText(tr("已暂停"));
+        setRuntimeState(RuntimeState::Paused, tr("已暂停"));
     } else {
-        setRuntimeStateText(tr("未连接"));
+        setRuntimeState(RuntimeState::Disconnected, tr("未连接"));
     }
 
     appendSystemLog(tr("串口连接已关闭"));
@@ -688,9 +730,9 @@ void MainWindow::handleSerialError(const QString& message)
         updateRecordUiState();
 
         if (m_paused) {
-            setRuntimeStateText(tr("已暂停"));
+            setRuntimeState(RuntimeState::Paused, tr("已暂停"));
         } else {
-            setRuntimeStateText(tr("未连接"));
+            setRuntimeState(RuntimeState::Disconnected, tr("未连接"));
         }
     }
 }

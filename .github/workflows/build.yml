@@ -27,7 +27,15 @@ jobs:
           cache: true
 
       - name: Configure
-        run: cmake -S . -B build -A x64
+        run: cmake -S . -B build -A x64 -DBUILD_TESTING=ON
 
       - name: Build
         run: cmake --build build --config Release
+
+      - name: Test
+        shell: pwsh
+        run: |
+          $env:QT_QPA_PLATFORM = "offscreen"
+          $env:QT_QPA_FONTDIR = "C:\Windows\Fonts"
+          $env:QT_LOGGING_RULES = "*.debug=false"
+          ctest --test-dir build -C Release --output-on-failure

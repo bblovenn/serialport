@@ -1,6 +1,8 @@
-# Windows 发布说明
+# Windows 打包与发布说明
 
-本文档说明如何从源码生成 Windows 可执行发布包。发布包用于演示和分发，不应直接提交到 Git 仓库。
+本文档说明如何从源码生成 Windows 可执行发布包。
+
+发布包适合演示、分发和测试，不建议直接提交到 Git 仓库。
 
 ## 发布目标
 
@@ -29,7 +31,7 @@ D:\Qt\Qt5.14.2\5.14.2\mingw73_64\bin\qmake.exe serialport.pro CONFIG+=release
 mingw32-make release
 ```
 
-生成结果通常位于：
+产物通常位于：
 
 ```text
 release/serialport.exe
@@ -45,13 +47,13 @@ cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
-生成结果通常位于：
+产物通常位于：
 
 ```text
 build/serialport.exe
 ```
 
-## 收集 Qt 运行库
+## 收集 Qt 运行时依赖
 
 使用 `windeployqt` 收集运行依赖：
 
@@ -61,7 +63,7 @@ copy release\serialport.exe dist\serialport-windows\
 windeployqt dist\serialport-windows\serialport.exe
 ```
 
-如果使用 CMake 构建，把 `copy` 的来源路径改成：
+如果你使用的是 CMake 构建，请把 `copy` 的源路径改成：
 
 ```powershell
 copy build\serialport.exe dist\serialport-windows\
@@ -75,8 +77,8 @@ Compress-Archive -Path dist\serialport-windows\* -DestinationPath dist\serialpor
 
 ## 发布前检查
 
-- 在未安装 Qt Creator 的 Windows 电脑上试运行
+- 在未安装 Qt Creator 的 Windows 机器上试运行
 - 确认主窗口、图标、串口列表和通信日志显示正常
 - 使用串口助手发送 ASCII 数据和 `$DATA` 协议帧，确认波形显示正常
-- 验证“开始记录 / 停止记录”与 CSV 保存功能
+- 验证“开始记录 / 停止记录”和 CSV 保存功能
 - 不要把 `dist/`、`release/`、`debug/`、`build/` 或 DLL 文件提交到 Git

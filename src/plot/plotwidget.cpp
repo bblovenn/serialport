@@ -5,7 +5,6 @@
 #include <QColor>
 #include <QPainter>
 #include <QPainterPath>
-#include <QPaintEvent>
 #include <QPen>
 #include <QVector>
 #include <QtGlobal>
@@ -22,7 +21,6 @@ PlotWidget::PlotWidget(QWidget* parent)
     setMinimumSize(600, 300);
     setAutoFillBackground(false);
 
-    // 约 30 FPS 的刷新频率，兼顾流畅度和重绘开销。
     connect(&m_refreshTimer, &QTimer::timeout, this, QOverload<>::of(&PlotWidget::update));
     m_refreshTimer.start(33);
 }
@@ -56,6 +54,19 @@ void PlotWidget::setYAxisRange(double min, double max)
     update();
 }
 
+QPair<double, double> PlotWidget::currentYAxisRange() const
+{
+    double minY = resolveMinY();
+    double maxY = resolveMaxY();
+
+    if (qFuzzyCompare(minY, maxY)) {
+        minY -= 1.0;
+        maxY += 1.0;
+    }
+
+    return qMakePair(minY, maxY);
+}
+
 void PlotWidget::clear()
 {
     if (m_stream) {
@@ -82,7 +93,6 @@ void PlotWidget::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // 绘制顺序很重要：先底层网格，再画数据曲线，最后覆盖文字标签。
     drawBackground(painter);
     drawGrid(painter);
     drawAxes(painter);
@@ -101,7 +111,6 @@ void PlotWidget::drawBackground(QPainter& painter)
 
 void PlotWidget::drawGrid(QPainter& painter)
 {
-    // 给左侧和底部留出刻度文字区域，避免文字压到网格线上。
     const QRect plotRect = rect().adjusted(48, 20, -20, -36);
 
     painter.setPen(QPen(QColor(38, 48, 58), 1));
@@ -129,12 +138,11 @@ void PlotWidget::drawAxes(QPainter& painter)
     painter.drawLine(plotRect.left(), plotRect.bottom(), plotRect.right(), plotRect.bottom());
     painter.drawLine(plotRect.left(), plotRect.top(), plotRect.left(), plotRect.bottom());
 
-    const double minY = resolveMinY();
-    const double maxY = resolveMaxY();
+    const QPair<double, double> range = currentYAxisRange();
 
     painter.setPen(QColor(204, 213, 222));
-    painter.drawText(6, plotRect.top() + 12, QString::number(maxY, 'f', 2));
-    painter.drawText(6, plotRect.bottom(), QString::number(minY, 'f', 2));
+    painter.drawText(6, plotRect.top() + 12, QString::number(range.second, 'f', 2));
+    painter.drawText(6, plotRect.bottom(), QString::number(range.first, 'f', 2));
 }
 
 void PlotWidget::drawCurves(QPainter& painter)
@@ -150,13 +158,9 @@ void PlotWidget::drawCurves(QPainter& painter)
         QColor(251, 113, 133)
     };
 
-    double minY = resolveMinY();
-    double maxY = resolveMaxY();
-    if (qFuzzyCompare(minY, maxY)) {
-        // 所有值都相同时扩大一点范围，避免除零，也避免曲线挤成不可见的一条线。
-        minY -= 1.0;
-        maxY += 1.0;
-    }
+    const QPair<double, double> range = currentYAxisRange();
+    const double minY = range.first;
+    const double maxY = range.second;
 
     for (int channelIndex = 0; channelIndex < m_stream->channelCount(); ++channelIndex) {
         const StreamChannel* channel = m_stream->channel(channelIndex);
@@ -164,17 +168,12 @@ void PlotWidget::drawCurves(QPainter& painter)
             continue;
         }
 
-        QVector<double> values = channel->values();
+        // 只取当前可见窗口，避免每帧复制整段历史数据。
+        const QVector<double> values = channel->values(m_sampleWindow);
         if (values.size() < 2) {
             continue;
         }
 
-        // 只显示最近一个采样窗口的数据。
-        if (values.size() > m_sampleWindow) {
-            values = values.mid(values.size() - m_sampleWindow);
-        }
-
-        // 使用 QPainterPath 一次性绘制折线，比逐段 drawLine 更清晰也更集中。
         QPainterPath path;
         path.moveTo(mapSampleToPoint(0, values.size(), values[0], minY, maxY));
 
@@ -230,7 +229,6 @@ double PlotWidget::resolveMinY() const
         return m_minY;
     }
 
-    // 自动缩放时遍历所有可见通道，找当前数据窗口的最小值。
     bool hasValue = false;
     double minValue = 0.0;
 
@@ -240,12 +238,17 @@ double PlotWidget::resolveMinY() const
             continue;
         }
 
-        const QVector<double> values = channel->values();
-        for (double value : values) {
-            if (!hasValue || value < minValue) {
-                minValue = value;
-                hasValue = true;
-            }
+        double channelMin = 0.0;
+        double channelMax = 0.0;
+        // 自动缩放只看当前窗口，避免旧极值长期影响实时显示。
+        if (!channel->minMaxOfLast(m_sampleWindow, &channelMin, &channelMax)) {
+            continue;
+        }
+
+        Q_UNUSED(channelMax)
+        if (!hasValue || channelMin < minValue) {
+            minValue = channelMin;
+            hasValue = true;
         }
     }
 
@@ -258,7 +261,6 @@ double PlotWidget::resolveMaxY() const
         return m_maxY;
     }
 
-    // 自动缩放时遍历所有可见通道，找当前数据窗口的最大值。
     bool hasValue = false;
     double maxValue = 0.0;
 
@@ -268,12 +270,16 @@ double PlotWidget::resolveMaxY() const
             continue;
         }
 
-        const QVector<double> values = channel->values();
-        for (double value : values) {
-            if (!hasValue || value > maxValue) {
-                maxValue = value;
-                hasValue = true;
-            }
+        double channelMin = 0.0;
+        double channelMax = 0.0;
+        if (!channel->minMaxOfLast(m_sampleWindow, &channelMin, &channelMax)) {
+            continue;
+        }
+
+        Q_UNUSED(channelMin)
+        if (!hasValue || channelMax > maxValue) {
+            maxValue = channelMax;
+            hasValue = true;
         }
     }
 
@@ -294,7 +300,6 @@ QPointF PlotWidget::mapSampleToPoint(
         return QPointF(plotRect.left(), plotRect.center().y());
     }
 
-    // X 轴按采样点序号均匀铺开；Y 轴将数值范围映射到绘图区高度，并反转方向。
     const double xRatio = static_cast<double>(sampleIndex) / static_cast<double>(sampleCount - 1);
     const double yRatio = (value - minY) / (maxY - minY);
 

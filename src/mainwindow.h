@@ -26,6 +26,12 @@ public:
     ~MainWindow() override;
 
 private:
+    enum class RuntimeState {
+        Disconnected,
+        Connected,
+        Paused
+    };
+
     void setupPlot();
     void setupConnections();
     void setupSerialConsoleConnections();
@@ -34,6 +40,7 @@ private:
     void applyVisualStyle();
 
     void setRuntimeStateText(const QString& text);
+    void setRuntimeState(RuntimeState state, const QString& text);
     void setSerialSettingsEnabled(bool enabled);
     void setOpenCloseButtonMode(bool connected);
     void refreshPorts();
@@ -72,6 +79,7 @@ private:
     CsvRecorder m_csvRecorder;
     QString m_currentRecordPath;
 
+    RuntimeState m_runtimeState;
     bool m_paused;
 };
 

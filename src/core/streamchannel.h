@@ -7,8 +7,6 @@
 #include <QString>
 #include <QVector>
 
-// StreamChannel 表示单条波形通道，例如 CH1、CH2。
-// 它把显示属性（名称、颜色、是否可见）和实际采样缓存放在一起，方便 PlotWidget 绘制。
 class StreamChannel
 {
 public:
@@ -22,6 +20,8 @@ public:
     int size() const;
 
     QVector<double> values() const;
+    QVector<double> values(int maxCount) const;
+    bool minMaxOfLast(int maxCount, double* minValue, double* maxValue) const;
 
     QString name() const;
     void setName(const QString& name);
@@ -33,10 +33,10 @@ public:
     void setVisible(bool visible);
 
 private:
-    RingBuffer m_buffer; // 当前通道的采样数据。
-    QString m_name;      // 例如 CH1、CH2。
-    QColor m_color;      // 绘图时使用的颜色。
-    bool m_visible;      // 是否参与显示。
+    RingBuffer m_buffer;
+    QString m_name;
+    QColor m_color;
+    bool m_visible;
 };
 
 #endif // STREAMCHANNEL_H

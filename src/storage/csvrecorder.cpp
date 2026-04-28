@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
+#include <QStringList>
 
 CsvRecorder::CsvRecorder()
     : m_stream(&m_file)
@@ -58,7 +59,10 @@ void CsvRecorder::append(const ProtocolFrame& frame)
         }
     }
 
+    // 超出首帧通道数的值统一写入 extra_values，避免静默丢失。
     m_stream << ','
+             << formatExtraValues(frame.values, m_channelCount)
+             << ','
              << escapeCsvField(QString::fromUtf8(frame.rawFrame))
              << '\n';
     m_stream.flush();
@@ -90,7 +94,7 @@ void CsvRecorder::writeHeader(int channelCount)
     for (int i = 0; i < channelCount; ++i) {
         m_stream << ",ch" << (i + 1);
     }
-    m_stream << ",raw_frame\n";
+    m_stream << ",extra_values,raw_frame\n";
     m_stream.flush();
 }
 
@@ -99,4 +103,21 @@ QString CsvRecorder::escapeCsvField(const QString& text)
     QString escaped = text;
     escaped.replace('"', "\"\"");
     return QStringLiteral("\"%1\"").arg(escaped);
+}
+
+QString CsvRecorder::formatExtraValues(const QVector<double>& values, int startIndex)
+{
+    if (startIndex < 0 || startIndex >= values.size()) {
+        return QStringLiteral("\"\"");
+    }
+
+    // 额外通道先用分号拼接，再整体作为一个 CSV 字段输出。
+    QStringList extraValues;
+    extraValues.reserve(values.size() - startIndex);
+
+    for (int i = startIndex; i < values.size(); ++i) {
+        extraValues.append(QString::number(values[i], 'g', 15));
+    }
+
+    return escapeCsvField(extraValues.join(';'));
 }
