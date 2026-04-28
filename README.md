@@ -25,6 +25,15 @@
 - 可暂停接收、清空波形、调整采样窗口
 - 支持固定 Y 轴范围和 Y 轴自动缩放
 
+## 运行截图
+
+当前仓库已预留 `docs/images/` 目录，建议补两张真实运行图：
+
+- `docs/images/main-window.png`：主界面截图
+- `docs/images/waveform-demo.png`：串口数据驱动下的波形截图
+
+当前环境里程序进程可以启动，但没有拿到可见主窗口，因此这里先保留截图位置，不放伪造图片。
+
 ## 面试可讲点
 
 这个项目可以按“上位机数据采集链路”来介绍：
@@ -134,6 +143,7 @@ docs/
   protocol.md 串口通信协议设计说明
   hardware.md STM32 联调说明
   release.md Windows 发布包说明
+  images/     README 运行截图目录
 firmware/
   stm32_uart_demo/ STM32 UART 数据上传示例
 .github/workflows/

@@ -233,7 +233,7 @@
       <property name="maximumSize">
        <size>
         <width>16777215</width>
-        <height>250</height>
+        <height>330</height>
        </size>
       </property>
       <property name="mouseTracking">
@@ -284,7 +284,7 @@
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>140</height>
+           <height>120</height>
           </size>
          </property>
          <property name="readOnly">
@@ -336,6 +336,65 @@
             <string>发送数据</string>
            </property>
           </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_recordBar">
+         <property name="spacing">
+          <number>8</number>
+         </property>
+         <item>
+          <widget class="QPushButton" name="pushButton_startRecord">
+           <property name="minimumSize">
+            <size>
+             <width>88</width>
+             <height>32</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>开始记录</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_stopRecord">
+           <property name="minimumSize">
+            <size>
+             <width>88</width>
+             <height>32</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>停止记录</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_recordStatus">
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>28</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>空闲</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_recordBar">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </item>

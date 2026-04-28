@@ -4,8 +4,9 @@
 #include <QVector>
 
 namespace {
-// 防止串口持续发送无换行垃圾数据时，缓冲区无限增长。
+// 防止设备持续发送无换行垃圾数据时，缓冲区无限增长。
 constexpr int kMaxBufferSize = 4096;
+constexpr char kProtocolPrefix[] = "$DATA,";
 }
 
 AsciiReader::AsciiReader(QObject* parent)
@@ -38,6 +39,7 @@ void AsciiReader::stop()
 {
     m_running = false;
     m_buffer.clear();
+    m_protocolParser.reset();
 }
 
 void AsciiReader::readAvailableData()
@@ -53,7 +55,7 @@ void AsciiReader::readAvailableData()
 
     const QString rawText = QString::fromUtf8(chunk);
     if (!rawText.isEmpty()) {
-        // 原始日志即时显示，并保留空格、Tab 等字符，方便排查真实串口内容。
+        // 原始日志即时显示，保留空格和制表符，便于排查真实串口内容。
         emit rawLineReceived(rawText);
     }
 
@@ -65,7 +67,7 @@ void AsciiReader::readAvailableData()
         return;
     }
 
-    // 数值解析仍按完整行处理，防止 "0." 这类半截数据被提前解析。
+    // 数值解析仍按完整行处理，防止半截数据被提前解析。
     int newlineIndex = m_buffer.indexOf('\n');
     while (newlineIndex >= 0) {
         const QByteArray line = m_buffer.left(newlineIndex).trimmed();
@@ -81,6 +83,21 @@ void AsciiReader::readAvailableData()
 
 void AsciiReader::parseLine(const QByteArray& line)
 {
+    if (line.startsWith(kProtocolPrefix)) {
+        const int parseErrorsBefore = m_protocolParser.parseErrorCount();
+        const int checksumErrorsBefore = m_protocolParser.checksumErrorCount();
+
+        m_protocolParser.appendData(line + "\n");
+        emitProtocolFrames();
+
+        if (m_protocolParser.parseErrorCount() > parseErrorsBefore) {
+            emit protocolParseErrorOccurred(QStringLiteral("协议帧解析失败：%1").arg(QString::fromUtf8(line)));
+        } else if (m_protocolParser.checksumErrorCount() > checksumErrorsBefore) {
+            emit protocolParseErrorOccurred(QStringLiteral("协议帧校验失败：%1").arg(QString::fromUtf8(line)));
+        }
+        return;
+    }
+
     QVector<double> values;
     const QList<QByteArray> parts = line.split(',');
 
@@ -96,7 +113,20 @@ void AsciiReader::parseLine(const QByteArray& line)
     }
 
     if (!values.isEmpty()) {
-        // 一行数据对应一次 SamplePack，交给 Stream 按通道缓存。
         emit samplesReady(SamplePack(values));
+    }
+}
+
+void AsciiReader::emitProtocolFrames()
+{
+    const QVector<ProtocolFrame> frames = m_protocolParser.takeFrames();
+
+    for (const ProtocolFrame& frame : frames) {
+        if (!frame.isValid || frame.values.isEmpty()) {
+            continue;
+        }
+
+        emit protocolFrameParsed(frame);
+        emit samplesReady(SamplePack(frame.values));
     }
 }

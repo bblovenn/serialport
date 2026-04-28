@@ -25,6 +25,10 @@ add_executable(serialport
     src/core/stream.h
     src/core/streamchannel.cpp
     src/core/streamchannel.h
+    src/protocol/protocolframe.cpp
+    src/protocol/protocolframe.h
+    src/protocol/protocolparser.cpp
+    src/protocol/protocolparser.h
     src/readers/abstractreader.cpp
     src/readers/abstractreader.h
     src/readers/asciireader.cpp
@@ -33,6 +37,8 @@ add_executable(serialport
     src/readers/demoreader.h
     src/serial/serialcontroller.cpp
     src/serial/serialcontroller.h
+    src/storage/csvrecorder.cpp
+    src/storage/csvrecorder.h
     src/plot/plotwidget.cpp
     src/plot/plotwidget.h
     resources.qrc
@@ -41,8 +47,10 @@ add_executable(serialport
 target_include_directories(serialport PRIVATE
     src
     src/core
+    src/protocol
     src/readers
     src/serial
+    src/storage
     src/plot
 )
 

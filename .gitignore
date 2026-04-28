@@ -52,6 +52,9 @@ build-*/
 tests/build-*/
 tests/ui/*.txt
 tests/ui/target_wrapper.bat
+tests/core/*.txt
+tests/core/target_wrapper.bat
+/target_wrapper.bat
 
 # xemacs temporary files
 *.flc

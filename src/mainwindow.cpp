@@ -8,6 +8,8 @@
 
 #include <QCheckBox>
 #include <QDateTime>
+#include <QDir>
+#include <QFileDialog>
 #include <QFont>
 #include <QIODevice>
 #include <QLineEdit>
@@ -353,7 +355,16 @@ void MainWindow::setupSerialConsoleConnections()
     // 通信面板相关操作统一放在这里，便于后续扩展发送和日志功能。
     connect(ui->pushButton_send, &QPushButton::clicked, this, &MainWindow::handleSendText);
     connect(ui->lineEdit_sendText, &QLineEdit::returnPressed, this, &MainWindow::handleSendText);
+    connect(ui->pushButton_startRecord, &QPushButton::clicked, this, &MainWindow::handleStartRecord);
+    connect(ui->pushButton_stopRecord, &QPushButton::clicked, this, &MainWindow::handleStopRecord);
     connect(m_asciiReader, &AsciiReader::rawLineReceived, this, &MainWindow::handleRawLineReceived);
+    connect(m_asciiReader, &AsciiReader::protocolFrameParsed, this, &MainWindow::handleProtocolFrameParsed);
+    connect(
+        m_asciiReader,
+        &AsciiReader::protocolParseErrorOccurred,
+        this,
+        &MainWindow::handleProtocolParseError
+    );
 }
 
 void MainWindow::setupSerial()
@@ -376,6 +387,9 @@ void MainWindow::initializeUiState()
     ui->label_sampleWindow->setText(tr("采样窗口："));
     ui->groupBox_serialConsole->setTitle(tr("串口通信面板"));
     ui->plainTextEdit_serialLog->setPlaceholderText(tr("串口收发日志将在这里显示"));
+    ui->pushButton_startRecord->setText(tr("开始记录"));
+    ui->pushButton_stopRecord->setText(tr("停止记录"));
+    ui->label_recordStatus->setText(tr("未记录"));
     ui->label_sendText->setText(tr("发送内容："));
     ui->lineEdit_sendText->setPlaceholderText(tr("请输入要发送的文本内容"));
     ui->checkBox_appendCrLf->setText(tr("自动附加回车换行"));
@@ -388,6 +402,7 @@ void MainWindow::initializeUiState()
 
     setRuntimeStateText(tr("未连接"));
     setSerialSettingsEnabled(true);
+    updateRecordUiState();
 
     showStatusMessage(tr("系统已就绪"));
 }
@@ -506,6 +521,15 @@ void MainWindow::showStatusMessage(const QString& text, int timeoutMs)
     statusBar()->showMessage(text, timeoutMs);
 }
 
+void MainWindow::updateRecordUiState()
+{
+    const bool recording = m_csvRecorder.isRecording();
+
+    ui->pushButton_startRecord->setEnabled(!recording);
+    ui->pushButton_stopRecord->setEnabled(recording);
+    ui->label_recordStatus->setText(recording ? tr("记录中") : tr("未记录"));
+}
+
 void MainWindow::togglePause()
 {
     // 暂停既影响波形显示，也影响底层文本读取。
@@ -612,6 +636,7 @@ void MainWindow::handleSerialOpened(const QString& portName, int baudRate)
     const QString message = tr("已连接 %1，波特率 %2").arg(portName).arg(baudRate);
     appendSystemLog(message);
     showStatusMessage(message, 3000);
+    updateRecordUiState();
 }
 
 void MainWindow::handleSerialClosed()
@@ -621,6 +646,14 @@ void MainWindow::handleSerialClosed()
     ui->pushButton_openClose->setText(tr("打开串口"));
     setOpenCloseButtonMode(false);
     setSerialSettingsEnabled(true);
+
+    if (m_csvRecorder.isRecording()) {
+        const QString stoppedPath = m_csvRecorder.filePath();
+        m_csvRecorder.stop();
+        appendSystemLog(tr("串口关闭，CSV 记录已停止：%1").arg(QDir::toNativeSeparators(stoppedPath)));
+    }
+
+    updateRecordUiState();
 
     if (m_paused) {
         setRuntimeStateText(tr("已暂停"));
@@ -643,6 +676,16 @@ void MainWindow::handleSerialError(const QString& message)
         ui->pushButton_openClose->setText(tr("打开串口"));
         setOpenCloseButtonMode(false);
         setSerialSettingsEnabled(true);
+
+        if (m_csvRecorder.isRecording()) {
+            const QString stoppedPath = m_csvRecorder.filePath();
+            m_csvRecorder.stop();
+            appendSystemLog(
+                tr("串口异常断开，CSV 记录已停止：%1").arg(QDir::toNativeSeparators(stoppedPath))
+            );
+        }
+
+        updateRecordUiState();
 
         if (m_paused) {
             setRuntimeStateText(tr("已暂停"));
@@ -690,4 +733,73 @@ void MainWindow::handleRawLineReceived(const QString& text)
 {
     // 原始文本日志和数值解析分开处理，互不影响。
     appendSerialLog(QStringLiteral("接收"), text);
+}
+
+void MainWindow::handleProtocolFrameParsed(const ProtocolFrame& frame)
+{
+    const QString message = tr("协议帧 seq=%1 time=%2 raw=%3")
+                                .arg(frame.sequence)
+                                .arg(frame.timestampMs)
+                                .arg(QString::fromUtf8(frame.rawFrame));
+    appendSerialLog(QStringLiteral("协议"), message);
+    m_csvRecorder.append(frame);
+}
+
+void MainWindow::handleProtocolParseError(const QString& message)
+{
+    appendSystemLog(message);
+    showStatusMessage(message, 4000);
+}
+
+void MainWindow::handleStartRecord()
+{
+    if (m_csvRecorder.isRecording()) {
+        showStatusMessage(tr("CSV 记录已经在进行中"), 3000);
+        return;
+    }
+
+    const QString defaultDir = QDir::current().filePath("logs");
+    QDir().mkpath(defaultDir);
+
+    const QString defaultPath = QDir(defaultDir).filePath(
+        QStringLiteral("session_%1.csv").arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"))
+    );
+
+    const QString filePath = QFileDialog::getSaveFileName(
+        this,
+        tr("选择 CSV 保存路径"),
+        defaultPath,
+        tr("CSV Files (*.csv)")
+    );
+
+    if (filePath.isEmpty()) {
+        showStatusMessage(tr("已取消记录"), 2000);
+        return;
+    }
+
+    if (!m_csvRecorder.start(filePath)) {
+        appendSystemLog(tr("CSV 文件创建失败：%1").arg(QDir::toNativeSeparators(filePath)));
+        showStatusMessage(tr("CSV 文件创建失败"), 4000);
+        updateRecordUiState();
+        return;
+    }
+
+    m_currentRecordPath = filePath;
+    appendSystemLog(tr("CSV 记录已开始：%1").arg(QDir::toNativeSeparators(filePath)));
+    showStatusMessage(tr("CSV 记录已开始"), 3000);
+    updateRecordUiState();
+}
+
+void MainWindow::handleStopRecord()
+{
+    if (!m_csvRecorder.isRecording()) {
+        showStatusMessage(tr("当前没有正在进行的 CSV 记录"), 3000);
+        return;
+    }
+
+    const QString stoppedPath = m_csvRecorder.filePath();
+    m_csvRecorder.stop();
+    appendSystemLog(tr("CSV 记录已停止：%1").arg(QDir::toNativeSeparators(stoppedPath)));
+    showStatusMessage(tr("CSV 记录已停止"), 3000);
+    updateRecordUiState();
 }

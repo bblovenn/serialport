@@ -1,8 +1,12 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QByteArray>
 #include <QMainWindow>
 #include <QString>
+
+#include "protocol/protocolframe.h"
+#include "storage/csvrecorder.h"
 
 class PlotWidget;
 class Stream;
@@ -13,7 +17,6 @@ namespace Ui {
 class MainWindow;
 }
 
-// MainWindow 负责把串口控制、数据读取、波形显示和通信面板组织在一起。
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -40,6 +43,7 @@ private:
     void appendSerialLog(const QString& category, const QString& text);
     void appendSystemLog(const QString& text);
     void showStatusMessage(const QString& text, int timeoutMs = 3000);
+    void updateRecordUiState();
 
 private slots:
     void togglePause();
@@ -53,6 +57,10 @@ private slots:
     void handleSerialError(const QString& message);
     void handleSendText();
     void handleRawLineReceived(const QString& text);
+    void handleProtocolFrameParsed(const ProtocolFrame& frame);
+    void handleProtocolParseError(const QString& message);
+    void handleStartRecord();
+    void handleStopRecord();
 
 private:
     Ui::MainWindow* ui;
@@ -61,8 +69,10 @@ private:
     Stream* m_stream;
     AsciiReader* m_asciiReader;
     SerialController* m_serialController;
+    CsvRecorder m_csvRecorder;
+    QString m_currentRecordPath;
 
-    bool m_paused; // 暂停状态同时影响串口读取和波形刷新文案。
+    bool m_paused;
 };
 
 #endif // MAINWINDOW_H
