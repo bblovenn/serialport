@@ -111,7 +111,7 @@ void PlotWidget::drawBackground(QPainter& painter)
 
 void PlotWidget::drawGrid(QPainter& painter)
 {
-    const QRect plotRect = rect().adjusted(48, 20, -20, -36);
+    const QRect plotRect = rect().adjusted(60, 20, -20, -48);
 
     painter.setPen(QPen(QColor(38, 48, 58), 1));
 
@@ -122,7 +122,7 @@ void PlotWidget::drawGrid(QPainter& painter)
         painter.drawLine(x, plotRect.top(), x, plotRect.bottom());
     }
 
-    const int horizontalLines = 8;
+    const int horizontalLines = 6;
     for (int i = 0; i <= horizontalLines; ++i) {
         const double ratio = static_cast<double>(i) / horizontalLines;
         const int y = plotRect.top() + static_cast<int>(ratio * plotRect.height());
@@ -132,17 +132,37 @@ void PlotWidget::drawGrid(QPainter& painter)
 
 void PlotWidget::drawAxes(QPainter& painter)
 {
-    const QRect plotRect = rect().adjusted(48, 20, -20, -36);
+    const QRect plotRect = rect().adjusted(60, 20, -20, -48);
 
     painter.setPen(QPen(QColor(92, 106, 120), 1));
     painter.drawLine(plotRect.left(), plotRect.bottom(), plotRect.right(), plotRect.bottom());
     painter.drawLine(plotRect.left(), plotRect.top(), plotRect.left(), plotRect.bottom());
 
     const QPair<double, double> range = currentYAxisRange();
+    const double minY = range.first;
+    const double maxY = range.second;
+    const int horizontalTicks = 6;
+    const int verticalTicks = 10;
 
     painter.setPen(QColor(204, 213, 222));
-    painter.drawText(6, plotRect.top() + 12, QString::number(range.second, 'f', 2));
-    painter.drawText(6, plotRect.bottom(), QString::number(range.first, 'f', 2));
+    QFontMetrics metrics = painter.fontMetrics();
+
+    for (int i = 0; i <= horizontalTicks; ++i) {
+        const double ratio = static_cast<double>(i) / horizontalTicks;
+        const int y = plotRect.top() + static_cast<int>(ratio * plotRect.height());
+        const double value = maxY - ratio * (maxY - minY);
+        const QString label = QString::number(value, 'f', 2);
+        painter.drawText(8, y + metrics.ascent() / 2, label);
+    }
+
+    for (int i = 0; i <= verticalTicks; ++i) {
+        const double ratio = static_cast<double>(i) / verticalTicks;
+        const int x = plotRect.left() + static_cast<int>(ratio * plotRect.width());
+        const int sampleValue = static_cast<int>(ratio * m_sampleWindow);
+        const QString label = QString::number(sampleValue);
+        const int textWidth = metrics.horizontalAdvance(label);
+        painter.drawText(x - textWidth / 2, plotRect.bottom() + metrics.height() + 6, label);
+    }
 }
 
 void PlotWidget::drawCurves(QPainter& painter)
@@ -188,10 +208,10 @@ void PlotWidget::drawCurves(QPainter& painter)
 
 void PlotWidget::drawLabels(QPainter& painter)
 {
-    const QRect plotRect = rect().adjusted(48, 20, -20, -36);
+    const QRect plotRect = rect().adjusted(60, 20, -20, -48);
 
     painter.setPen(QColor(219, 226, 233));
-    painter.drawText(plotRect.left(), height() - 12, QString("Samples: %1").arg(m_sampleWindow));
+    painter.drawText(12, height() - 12, QString("Window: %1").arg(m_sampleWindow));
 
     if (m_paused) {
         painter.setPen(QColor(255, 214, 90));
@@ -294,7 +314,7 @@ QPointF PlotWidget::mapSampleToPoint(
     double maxY
 ) const
 {
-    const QRect plotRect = rect().adjusted(48, 20, -20, -36);
+    const QRect plotRect = rect().adjusted(60, 20, -20, -48);
 
     if (sampleCount <= 1) {
         return QPointF(plotRect.left(), plotRect.center().y());

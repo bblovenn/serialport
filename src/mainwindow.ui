@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
@@ -19,10 +19,15 @@
   <property name="windowTitle">
    <string>串口波形监视器</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">/* 鍏ㄥ眬瀛椾綋鍜屽熀纭€璁惧畾 */
+
+</string>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_main">
     <property name="spacing">
-     <number>8</number>
+     <number>10</number>
     </property>
     <property name="leftMargin">
      <number>12</number>
@@ -39,10 +44,16 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_header">
       <property name="spacing">
-       <number>8</number>
+       <number>12</number>
       </property>
       <item>
        <widget class="QPushButton" name="pushButton_openClose">
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>42</height>
+         </size>
+        </property>
         <property name="text">
          <string>打开串口</string>
         </property>
@@ -50,6 +61,12 @@
       </item>
       <item>
        <widget class="QPushButton" name="pushButton_pause">
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>42</height>
+         </size>
+        </property>
         <property name="text">
          <string>暂停接收</string>
         </property>
@@ -57,6 +74,12 @@
       </item>
       <item>
        <widget class="QPushButton" name="pushButton_clear">
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>42</height>
+         </size>
+        </property>
         <property name="text">
          <string>清空波形</string>
         </property>
@@ -64,8 +87,36 @@
       </item>
       <item>
        <widget class="QPushButton" name="pushButton_refreshPorts">
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>42</height>
+         </size>
+        </property>
         <property name="text">
          <string>刷新串口</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_runtimeState">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>112</width>
+          <height>38</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>未连接</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
@@ -87,10 +138,19 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_settings">
       <property name="spacing">
-       <number>8</number>
+       <number>12</number>
       </property>
       <item>
        <widget class="QLabel" name="label_port">
+        <property name="minimumSize">
+         <size>
+          <width>54</width>
+          <height>32</height>
+         </size>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
         <property name="text">
          <string>串口：</string>
         </property>
@@ -98,6 +158,18 @@
       </item>
       <item>
        <widget class="QComboBox" name="comboBox_port">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>136</width>
+          <height>34</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>150</width>
@@ -108,6 +180,15 @@
       </item>
       <item>
        <widget class="QLabel" name="label_baudRate">
+        <property name="minimumSize">
+         <size>
+          <width>68</width>
+          <height>32</height>
+         </size>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
         <property name="text">
          <string>波特率：</string>
         </property>
@@ -115,9 +196,21 @@
       </item>
       <item>
        <widget class="QComboBox" name="comboBox_baud">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>96</width>
+          <height>34</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
-          <width>120</width>
+          <width>110</width>
           <height>16777215</height>
          </size>
         </property>
@@ -149,14 +242,35 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkBox_autoScaleY">
-        <property name="text">
-         <string>Y 轴自动缩放</string>
-        </property>
+        <widget class="QCheckBox" name="checkBox_autoScaleY">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>34</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Y 轴自动缩放</string>
+         </property>
        </widget>
       </item>
       <item>
        <widget class="QLabel" name="label_sampleWindow">
+        <property name="minimumSize">
+         <size>
+          <width>84</width>
+          <height>32</height>
+         </size>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
         <property name="text">
          <string>采样窗口：</string>
         </property>
@@ -164,9 +278,21 @@
       </item>
       <item>
        <widget class="QSpinBox" name="spinBox_sampleWindow">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>84</width>
+          <height>34</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
-          <width>100</width>
+          <width>96</width>
           <height>16777215</height>
          </size>
         </property>
@@ -197,45 +323,35 @@
         </property>
        </spacer>
       </item>
-      <item>
-       <widget class="QLabel" name="label_runtimeState">
-        <property name="text">
-         <string>未连接</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
      </layout>
     </item>
     <item>
-     <widget class="QWidget" name="widget_plotArea" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>3</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>430</height>
-       </size>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QGroupBox" name="groupBox_serialConsole">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>330</height>
-       </size>
-      </property>
+      <widget class="QSplitter" name="splitter_main">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="handleWidth">
+        <number>8</number>
+       </property>
+       <widget class="QWidget" name="widget_plotArea" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>3</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>200</height>
+        </size>
+       </property>
+      </widget>
+      <widget class="QGroupBox" name="groupBox_serialConsole">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+
       <property name="mouseTracking">
        <bool>false</bool>
       </property>
@@ -254,12 +370,18 @@
       <property name="flat">
        <bool>false</bool>
       </property>
-      <property name="checkable">
-       <bool>false</bool>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_serialConsole">
-       <property name="spacing">
-        <number>8</number>
+       <property name="checkable">
+        <bool>false</bool>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>220</height>
+        </size>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_serialConsole">
+        <property name="spacing">
+         <number>10</number>
        </property>
        <property name="leftMargin">
         <number>10</number>
@@ -275,18 +397,18 @@
        </property>
        <item>
         <widget class="QPlainTextEdit" name="plainTextEdit_serialLog">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>90</height>
-          </size>
+         <property name="font">
+          <font>
+           <family>Consolas</family>
+           <pointsize>10</pointsize>
+          </font>
          </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>140</height>
-          </size>
-         </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>120</height>
+           </size>
+          </property>
          <property name="readOnly">
           <bool>true</bool>
          </property>
@@ -296,12 +418,21 @@
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_sendBar">
+       <layout class="QHBoxLayout" name="horizontalLayout_sendBar">
          <property name="spacing">
-          <number>8</number>
+          <number>10</number>
          </property>
          <item>
           <widget class="QLabel" name="label_sendText">
+           <property name="minimumSize">
+           <size>
+             <width>84</width>
+             <height>34</height>
+            </size>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
            <property name="text">
             <string>发送内容：</string>
            </property>
@@ -309,6 +440,18 @@
          </item>
          <item>
           <widget class="QLineEdit" name="lineEdit_sendText">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>360</width>
+             <height>34</height>
+            </size>
+           </property>
            <property name="placeholderText">
             <string>请输入要发送的文本内容</string>
            </property>
@@ -316,20 +459,38 @@
          </item>
          <item>
           <widget class="QCheckBox" name="checkBox_appendCrLf">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>34</height>
+            </size>
+           </property>
            <property name="text">
             <string>自动附加回车换行</string>
            </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="pushButton_send">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
-             <width>88</width>
-             <height>0</height>
+             <width>108</width>
+             <height>34</height>
             </size>
            </property>
            <property name="text">
@@ -340,16 +501,22 @@
         </layout>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_recordBar">
+       <layout class="QHBoxLayout" name="horizontalLayout_recordBar">
          <property name="spacing">
-          <number>8</number>
+          <number>10</number>
          </property>
          <item>
           <widget class="QPushButton" name="pushButton_startRecord">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
-             <width>88</width>
-             <height>32</height>
+             <width>104</width>
+             <height>34</height>
             </size>
            </property>
            <property name="text">
@@ -359,10 +526,16 @@
          </item>
          <item>
           <widget class="QPushButton" name="pushButton_stopRecord">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
-             <width>88</width>
-             <height>32</height>
+             <width>104</width>
+             <height>34</height>
             </size>
            </property>
            <property name="text">
@@ -371,15 +544,21 @@
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="label_recordStatus">
+          <widget class="QPushButton" name="pushButton_clearSerialLog">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
-             <width>60</width>
-             <height>28</height>
+             <width>104</width>
+             <height>34</height>
             </size>
            </property>
            <property name="text">
-            <string>空闲</string>
+            <string>清空日志</string>
            </property>
           </widget>
          </item>
@@ -396,15 +575,39 @@
            </property>
           </spacer>
          </item>
+         <item>
+          <widget class="QLabel" name="label_recordStatus">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>84</width>
+             <height>34</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>未记录</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
       </layout>
      </widget>
-    </item>
-   </layout>
-  </widget>
-  <widget class="QStatusBar" name="statusbar"/>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources/>
  <connections/>
 </ui>
+

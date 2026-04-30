@@ -68,6 +68,7 @@ private slots:
     void handleProtocolParseError(const QString& message);
     void handleStartRecord();
     void handleStopRecord();
+    void handleClearSerialLog();
 
 private:
     Ui::MainWindow* ui;

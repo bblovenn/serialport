@@ -56,6 +56,12 @@ MainWindow::MainWindow(QWidget* parent)
     refreshPorts();
 }
 
+void MainWindow::handleClearSerialLog()
+{
+    ui->plainTextEdit_serialLog->clear();
+    showStatusMessage(tr("串口收发日志已清空"), 2000);
+}
+
 MainWindow::~MainWindow()
 {
     delete ui;
@@ -97,218 +103,29 @@ void MainWindow::applyVisualStyle()
 {
     QFont uiFont = font();
     uiFont.setStyleHint(QFont::SansSerif);
-    uiFont.setPointSize(10);
+    uiFont.setPointSize(12);
     uiFont.setWeight(QFont::Light);
     setFont(uiFont);
     ui->centralwidget->setFont(uiFont);
-
-    setStyleSheet(QStringLiteral(R"(
-        QMainWindow {
-            background: #eef2f5;
-        }
-
-        QWidget#centralwidget {
-            background: #eef2f5;
-            color: #334155;
-        }
-
-        QPushButton {
-            min-height: 34px;
-            padding: 5px 18px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            background: qlineargradient(
-                x1:0, y1:0, x2:0, y2:1,
-                stop:0 #ffffff,
-                stop:1 #f4f7fb
-            );
-            color: #334155;
-            font-weight: 400;
-        }
-
-        QPushButton:hover {
-            background: qlineargradient(
-                x1:0, y1:0, x2:0, y2:1,
-                stop:0 #ffffff,
-                stop:1 #eef4fb
-            );
-            border-color: #94a3b8;
-            color: #1f2937;
-        }
-
-        QPushButton:pressed {
-            background: #e2e8f0;
-            border-color: #94a3b8;
-            padding-top: 6px;
-            padding-bottom: 4px;
-        }
-
-        QPushButton:disabled {
-            background: #e2e8ee;
-            color: #8b97a3;
-            border-color: #d5dde5;
-        }
-
-        QPushButton#pushButton_openClose {
-            min-width: 104px;
-            background: qlineargradient(
-                x1:0, y1:0, x2:0, y2:1,
-                stop:0 #ffffff,
-                stop:1 #eff6ff
-            );
-            border: 1px solid #93c5fd;
-            border-left: 4px solid #3b82f6;
-            border-radius: 8px;
-            color: #1d4ed8;
-            font-weight: 500;
-        }
-
-        QPushButton#pushButton_openClose:hover {
-            background: qlineargradient(
-                x1:0, y1:0, x2:0, y2:1,
-                stop:0 #f8fbff,
-                stop:1 #dbeafe
-            );
-            border: 1px solid #60a5fa;
-            border-left: 4px solid #2563eb;
-            color: #1e40af;
-        }
-
-        QPushButton#pushButton_openClose:pressed {
-            background: #dbeafe;
-            border: 1px solid #3b82f6;
-            border-left: 4px solid #1d4ed8;
-            color: #1e3a8a;
-        }
-
-        QPushButton#pushButton_openClose:disabled {
-            background: #edf2f7;
-            border: 1px solid #cbd5e1;
-            border-left: 4px solid #cbd5e1;
-            color: #94a3b8;
-        }
-
-        QPushButton#pushButton_openClose[mode="danger"] {
-            background: qlineargradient(
-                x1:0, y1:0, x2:0, y2:1,
-                stop:0 #ffffff,
-                stop:1 #fff7ed
-            );
-            border: 1px solid #fed7aa;
-            border-left: 4px solid #f97316;
-            color: #c2410c;
-        }
-
-        QPushButton#pushButton_openClose[mode="danger"]:hover {
-            background: #ffedd5;
-            border: 1px solid #fdba74;
-            border-left: 4px solid #ea580c;
-            color: #9a3412;
-        }
-
-        QPushButton#pushButton_openClose[mode="danger"]:pressed {
-            background: #fed7aa;
-            border: 1px solid #fb923c;
-            border-left: 4px solid #c2410c;
-            color: #7c2d12;
-        }
-
-        QPushButton#pushButton_clear {
-            background: #fff7f7;
-            border-color: #fecdd3;
-            color: #be123c;
-        }
-
-        QPushButton#pushButton_clear:hover {
-            background: #fff1f2;
-            border-color: #fda4af;
-            color: #9f1239;
-        }
-
-        QPushButton#pushButton_clear:pressed {
-            background: #ffe4e6;
-            border-color: #fb7185;
-        }
-
-        QComboBox, QSpinBox, QLineEdit {
-            min-height: 30px;
-            padding: 4px 8px;
-            border: 1px solid #c8d1dc;
-            border-radius: 6px;
-            background: #ffffff;
-            selection-background-color: #bfdbfe;
-            selection-color: #1e3a8a;
-        }
-
-        QComboBox:disabled, QSpinBox:disabled, QLineEdit:disabled {
-            background: #e2e8ee;
-            color: #8b97a3;
-        }
-
-        QCheckBox {
-            spacing: 6px;
-            color: #263645;
-        }
-
-        QLabel {
-            color: #475569;
-        }
-
-        QLabel#label_runtimeState {
-            min-width: 92px;
-            padding: 5px 12px;
-            border-radius: 14px;
-            font-weight: 700;
-        }
-
-        QWidget#widget_plotArea {
-            background: #eef2f5;
-        }
-
-        QWidget#plotContainer {
-            background: #101418;
-            border: 1px solid #c7d0db;
-            border-radius: 14px;
-        }
-
-        QGroupBox#groupBox_serialConsole {
-            margin-top: 14px;
-            padding-top: 12px;
-            border: 1px solid #c8d1dc;
-            border-radius: 10px;
-            background: #f8fafc;
-            font-weight: 500;
-            color: #475569;
-        }
-
-        QGroupBox#groupBox_serialConsole::title {
-            subcontrol-origin: margin;
-            left: 12px;
-            padding: 0 8px;
-            background: #f8fafc;
-        }
-
-        QPlainTextEdit#plainTextEdit_serialLog {
-            border: 1px solid #d0d8e2;
-            border-radius: 8px;
-            background: #ffffff;
-            color: #334155;
-            padding: 8px;
-            selection-background-color: #d9f99d;
-        }
-
-        QStatusBar {
-            background: #e5ebf1;
-            color: #455565;
-            border-top: 1px solid #c8d1dc;
-        }
-    )"));
 
     QFont logFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
     logFont.setStyleHint(QFont::Monospace);
     logFont.setPointSize(10);
     logFont.setWeight(QFont::Normal);
     ui->plainTextEdit_serialLog->setFont(logFont);
+    ui->splitter_main->setChildrenCollapsible(false);
+    ui->splitter_main->setStretchFactor(0, 5);
+    ui->splitter_main->setStretchFactor(1, 3);
+    ui->splitter_main->setSizes({420, 260});
+    ui->horizontalLayout_sendBar->setStretch(0, 0);
+    ui->horizontalLayout_sendBar->setStretch(1, 1);
+    ui->horizontalLayout_sendBar->setStretch(2, 0);
+    ui->horizontalLayout_sendBar->setStretch(3, 0);
+    ui->horizontalLayout_recordBar->setStretch(0, 0);
+    ui->horizontalLayout_recordBar->setStretch(1, 0);
+    ui->horizontalLayout_recordBar->setStretch(2, 0);
+    ui->horizontalLayout_recordBar->setStretch(3, 0);
+    ui->horizontalLayout_recordBar->setStretch(4, 1);
 }
 
 // 这里连接波形主链路和基础控制按钮，属于界面层到数据层的总装点。
@@ -367,6 +184,7 @@ void MainWindow::setupSerialConsoleConnections()
     connect(ui->lineEdit_sendText, &QLineEdit::returnPressed, this, &MainWindow::handleSendText);
     connect(ui->pushButton_startRecord, &QPushButton::clicked, this, &MainWindow::handleStartRecord);
     connect(ui->pushButton_stopRecord, &QPushButton::clicked, this, &MainWindow::handleStopRecord);
+    connect(ui->pushButton_clearSerialLog, &QPushButton::clicked, this, &MainWindow::handleClearSerialLog);
     connect(m_asciiReader, &AsciiReader::rawLineReceived, this, &MainWindow::handleRawLineReceived);
     connect(m_asciiReader, &AsciiReader::protocolFrameParsed, this, &MainWindow::handleProtocolFrameParsed);
     connect(
@@ -564,6 +382,13 @@ void MainWindow::updateRecordUiState()
     ui->pushButton_startRecord->setEnabled(!recording);
     ui->pushButton_stopRecord->setEnabled(recording);
     ui->label_recordStatus->setText(recording ? tr("记录中") : tr("未记录"));
+    ui->label_recordStatus->setStyleSheet(recording
+        ? QStringLiteral("min-width:72px;padding:4px 10px;border-radius:10px;"
+                         "background:#e8f7ee;color:#1f7a45;border:1px solid #a9dbba;"
+                         "font-weight:600;")
+        : QStringLiteral("min-width:72px;padding:4px 10px;border-radius:10px;"
+                         "background:#edf2f7;color:#64748b;border:1px solid #d7dee7;"
+                         "font-weight:600;"));
 }
 
 void MainWindow::togglePause()
