@@ -1,13 +1,15 @@
-#include <QHBoxLayout>
-#include <QLabel>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QGroupBox>
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMetaObject>
 #include <QPlainTextEdit>
 #include <QPushButton>
-#include <QCheckBox>
+#include <QSizePolicy>
 #include <QSpinBox>
+#include <QSplitter>
 #include <QVBoxLayout>
 #include <QtTest>
 
@@ -15,20 +17,9 @@
 #include "core/stream.h"
 #include "mainwindow.h"
 #include "plot/plotwidget.h"
+#include "tst_mainwindowlayout.h"
 
-class MainWindowLayoutTest : public QObject
-{
-    Q_OBJECT
-
-private slots:
-    void layout_has_header_and_settings_rows();
-    void initial_texts_match_the_approved_design();
-    void spacing_and_widths_match_the_compact_layout();
-    void runtime_state_uses_explicit_property();
-    void plot_auto_scale_uses_visible_window_only();
-};
-
-void MainWindowLayoutTest::layout_has_header_and_settings_rows()
+void MainWindowLayoutTest::layout_has_header_settings_and_splitter()
 {
     MainWindow window;
 
@@ -38,7 +29,7 @@ void MainWindowLayoutTest::layout_has_header_and_settings_rows()
     auto* mainLayout = qobject_cast<QVBoxLayout*>(centralWidget->layout());
     QVERIFY2(mainLayout != nullptr, "verticalLayout_main should be attached to centralwidget");
     QCOMPARE(mainLayout->objectName(), QString("verticalLayout_main"));
-    QCOMPARE(mainLayout->count(), 4);
+    QCOMPARE(mainLayout->count(), 3);
 
     auto* headerItem = mainLayout->itemAt(0);
     QVERIFY2(headerItem != nullptr && headerItem->layout() != nullptr,
@@ -46,11 +37,12 @@ void MainWindowLayoutTest::layout_has_header_and_settings_rows()
     auto* headerLayout = qobject_cast<QHBoxLayout*>(headerItem->layout());
     QVERIFY2(headerLayout != nullptr, "horizontalLayout_header should exist");
     QCOMPARE(headerLayout->objectName(), QString("horizontalLayout_header"));
-    QCOMPARE(headerLayout->count(), 5);
+    QCOMPARE(headerLayout->count(), 6);
     QCOMPARE(headerLayout->itemAt(0)->widget()->objectName(), QString("pushButton_openClose"));
     QCOMPARE(headerLayout->itemAt(1)->widget()->objectName(), QString("pushButton_pause"));
     QCOMPARE(headerLayout->itemAt(2)->widget()->objectName(), QString("pushButton_clear"));
     QCOMPARE(headerLayout->itemAt(3)->widget()->objectName(), QString("pushButton_refreshPorts"));
+    QCOMPARE(headerLayout->itemAt(4)->widget()->objectName(), QString("label_runtimeState"));
 
     auto* settingsItem = mainLayout->itemAt(1);
     QVERIFY2(settingsItem != nullptr && settingsItem->layout() != nullptr,
@@ -58,7 +50,7 @@ void MainWindowLayoutTest::layout_has_header_and_settings_rows()
     auto* settingsLayout = qobject_cast<QHBoxLayout*>(settingsItem->layout());
     QVERIFY2(settingsLayout != nullptr, "horizontalLayout_settings should exist");
     QCOMPARE(settingsLayout->objectName(), QString("horizontalLayout_settings"));
-    QCOMPARE(settingsLayout->count(), 9);
+    QCOMPARE(settingsLayout->count(), 8);
     QCOMPARE(settingsLayout->itemAt(0)->widget()->objectName(), QString("label_port"));
     QCOMPARE(settingsLayout->itemAt(1)->widget()->objectName(), QString("comboBox_port"));
     QCOMPARE(settingsLayout->itemAt(2)->widget()->objectName(), QString("label_baudRate"));
@@ -66,25 +58,27 @@ void MainWindowLayoutTest::layout_has_header_and_settings_rows()
     QCOMPARE(settingsLayout->itemAt(4)->widget()->objectName(), QString("checkBox_autoScaleY"));
     QCOMPARE(settingsLayout->itemAt(5)->widget()->objectName(), QString("label_sampleWindow"));
     QCOMPARE(settingsLayout->itemAt(6)->widget()->objectName(), QString("spinBox_sampleWindow"));
-    QCOMPARE(settingsLayout->itemAt(8)->widget()->objectName(), QString("label_runtimeState"));
 
-    auto* plotItem = mainLayout->itemAt(2);
-    QVERIFY2(plotItem != nullptr, "third item should exist");
-    auto* plotArea = plotItem->widget();
-    QVERIFY2(plotArea != nullptr, "third item should contain widget_plotArea");
+    auto* contentItem = mainLayout->itemAt(2);
+    QVERIFY2(contentItem != nullptr, "third item should exist");
+    auto* splitter = qobject_cast<QSplitter*>(contentItem->widget());
+    QVERIFY2(splitter != nullptr, "third item should contain splitter_main");
+    QCOMPARE(splitter->objectName(), QString("splitter_main"));
+    QCOMPARE(splitter->count(), 2);
+
+    auto* plotArea = splitter->widget(0);
+    QVERIFY2(plotArea != nullptr, "splitter first widget should be widget_plotArea");
     QCOMPARE(plotArea->objectName(), QString("widget_plotArea"));
     const QSizePolicy plotAreaSizePolicy = plotArea->sizePolicy();
     QCOMPARE(plotAreaSizePolicy.horizontalPolicy(), QSizePolicy::Expanding);
     QCOMPARE(plotAreaSizePolicy.verticalPolicy(), QSizePolicy::Expanding);
 
-    auto* serialConsoleItem = mainLayout->itemAt(3);
-    QVERIFY2(serialConsoleItem != nullptr, "fourth item should exist");
-    auto* serialConsole = qobject_cast<QGroupBox*>(serialConsoleItem->widget());
-    QVERIFY2(serialConsole != nullptr, "fourth item should contain groupBox_serialConsole");
+    auto* serialConsole = qobject_cast<QGroupBox*>(splitter->widget(1));
+    QVERIFY2(serialConsole != nullptr, "splitter second widget should be groupBox_serialConsole");
     QCOMPARE(serialConsole->objectName(), QString("groupBox_serialConsole"));
 }
 
-void MainWindowLayoutTest::initial_texts_match_the_approved_design()
+void MainWindowLayoutTest::initial_texts_match_the_current_design()
 {
     MainWindow window;
 
@@ -131,7 +125,7 @@ void MainWindowLayoutTest::spacing_and_widths_match_the_compact_layout()
 
     auto* verticalLayoutMain = qobject_cast<QVBoxLayout*>(centralWidget->layout());
     QVERIFY2(verticalLayoutMain != nullptr, "verticalLayout_main should be attached to centralwidget");
-    QCOMPARE(verticalLayoutMain->spacing(), 8);
+    QCOMPARE(verticalLayoutMain->spacing(), 10);
 
     const QMargins margins = verticalLayoutMain->contentsMargins();
     QCOMPARE(margins.left(), 12);
@@ -145,17 +139,17 @@ void MainWindowLayoutTest::spacing_and_widths_match_the_compact_layout()
 
     auto* comboBoxBaud = window.findChild<QComboBox*>("comboBox_baud");
     QVERIFY2(comboBoxBaud != nullptr, "comboBox_baud should exist");
-    QCOMPARE(comboBoxBaud->maximumWidth(), 120);
+    QCOMPARE(comboBoxBaud->maximumWidth(), 110);
+    QCOMPARE(comboBoxBaud->currentText(), QString("115200"));
 
     auto* spinBoxSampleWindow = window.findChild<QSpinBox*>("spinBox_sampleWindow");
     QVERIFY2(spinBoxSampleWindow != nullptr, "spinBox_sampleWindow should exist");
-    QCOMPARE(spinBoxSampleWindow->maximumWidth(), 100);
+    QCOMPARE(spinBoxSampleWindow->maximumWidth(), 96);
 
     auto* serialLog = window.findChild<QPlainTextEdit*>("plainTextEdit_serialLog");
     QVERIFY2(serialLog != nullptr, "plainTextEdit_serialLog should exist");
     QVERIFY2(serialLog->isReadOnly(), "serial log should be read-only");
-    QCOMPARE(serialLog->minimumHeight(), 90);
-    QCOMPARE(serialLog->maximumHeight(), 140);
+    QCOMPARE(serialLog->minimumHeight(), 120);
 
     auto* sendText = window.findChild<QLineEdit*>("lineEdit_sendText");
     QVERIFY2(sendText != nullptr, "lineEdit_sendText should exist");
@@ -206,4 +200,3 @@ void MainWindowLayoutTest::plot_auto_scale_uses_visible_window_only()
 }
 
 QTEST_MAIN(MainWindowLayoutTest)
-#include "tst_mainwindowlayout.moc"

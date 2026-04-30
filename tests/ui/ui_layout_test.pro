@@ -32,6 +32,7 @@ SOURCES += \
     ../../src/plot/plotwidget.cpp
 
 HEADERS += \
+    tst_mainwindowlayout.h \
     ../../src/mainwindow.h \
     ../../src/core/ringbuffer.h \
     ../../src/core/samplepack.h \
